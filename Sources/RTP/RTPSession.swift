@@ -48,11 +48,20 @@ final class RTPSession: @unchecked Sendable {
     private let encoder: CodecEncoder
     private let decoder: CodecDecoder
 
+    /// Outbound SRTP context (built from our SDP-offered crypto). Nil
+    /// when negotiated profile is plain RTP/AVP.
+    private let outboundSRTP: SRTPContext?
+    /// Inbound SRTP context (built from peer's SDP-answered crypto).
+    /// Lazily learns peer's SSRC from the first received packet.
+    private let inboundSRTP: SRTPContext?
+
     init(socket: UDPSocket,
          remoteHost: String,
          remotePort: UInt16,
          payloadType: UInt8,
-         codec: CodecKind) {
+         codec: CodecKind,
+         outboundCrypto: SDPCryptoLine? = nil,
+         inboundCrypto: SDPCryptoLine? = nil) {
         self.socket = socket
         self.remoteHost = remoteHost
         self.remotePort = remotePort
@@ -60,9 +69,17 @@ final class RTPSession: @unchecked Sendable {
         self.codec = codec
         self.encoder = codec.makeEncoder()
         self.decoder = codec.makeDecoder()
-        self.ssrc = UInt32.random(in: 1...UInt32.max)
+        let randSSRC = UInt32.random(in: 1...UInt32.max)
+        self.ssrc = randSSRC
         self._seq = UInt16.random(in: 0...UInt16.max)
         self._timestamp = UInt32.random(in: 0...UInt32.max)
+        self.outboundSRTP = outboundCrypto.map {
+            SRTPContext(masterKey: $0.masterKey, masterSalt: $0.masterSalt, ssrc: randSSRC)
+        }
+        self.inboundSRTP = inboundCrypto.map {
+            // Peer SSRC unknown until first packet — set at receive.
+            SRTPContext(masterKey: $0.masterKey, masterSalt: $0.masterSalt, ssrc: 0)
+        }
     }
 
     // MARK: - Public send API
@@ -224,7 +241,14 @@ final class RTPSession: @unchecked Sendable {
         var ssrcBE = ssrc.bigEndian
         withUnsafeBytes(of: &ssrcBE) { pkt.append(contentsOf: $0) }
         pkt.append(payload)
-        try socket.send(pkt, to: remoteHost, port: remotePort)
+        // Encrypt + authenticate before going on the wire if SRTP is active.
+        let onWire: Data
+        if let outboundSRTP, let protected = outboundSRTP.protect(pkt) {
+            onWire = protected
+        } else {
+            onWire = pkt
+        }
+        try socket.send(onWire, to: remoteHost, port: remotePort)
     }
 
     // MARK: - Internal: receive
@@ -235,18 +259,36 @@ final class RTPSession: @unchecked Sendable {
     }
 
     private func handleRTPPacket(_ data: Data) {
-        let cc = Int(data[0] & 0x0F)
-        let hasExt = (data[0] & 0x10) != 0
-        let pt = data[1] & 0x7F
-        let seq = (UInt16(data[2]) << 8) | UInt16(data[3])
+        // Decrypt + verify if inbound SRTP is configured. We learn the
+        // peer's SSRC from the first packet; the SDP-negotiated keys
+        // bind to that SSRC.
+        let rtp: Data
+        if let inboundSRTP {
+            if inboundSRTP.ssrc == 0, data.count >= 12 {
+                let s = (UInt32(data[8]) << 24)
+                      | (UInt32(data[9]) << 16)
+                      | (UInt32(data[10]) << 8)
+                      | UInt32(data[11])
+                inboundSRTP.ssrc = s
+            }
+            guard let plaintext = inboundSRTP.unprotect(data) else { return }
+            rtp = plaintext
+        } else {
+            rtp = data
+        }
+
+        let cc = Int(rtp[0] & 0x0F)
+        let hasExt = (rtp[0] & 0x10) != 0
+        let pt = rtp[1] & 0x7F
+        let seq = (UInt16(rtp[2]) << 8) | UInt16(rtp[3])
         let headerLen = 12 + 4 * cc
         var payloadStart = headerLen
-        if hasExt && data.count >= headerLen + 4 {
-            let extLen = Int((UInt16(data[headerLen + 2]) << 8) | UInt16(data[headerLen + 3]))
+        if hasExt && rtp.count >= headerLen + 4 {
+            let extLen = Int((UInt16(rtp[headerLen + 2]) << 8) | UInt16(rtp[headerLen + 3]))
             payloadStart = headerLen + 4 + 4 * extLen
         }
-        guard data.count > payloadStart else { return }
-        let payload = data.subdata(in: payloadStart..<data.count)
+        guard rtp.count > payloadStart else { return }
+        let payload = rtp.subdata(in: payloadStart..<rtp.count)
         packetsReceived &+= 1
 
         if let dtmfPT, pt == dtmfPT {

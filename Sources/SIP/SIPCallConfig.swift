@@ -32,4 +32,9 @@ struct SIPCallConfig {
     /// When TLS, accept any presented server certificate. Convenient for
     /// dev / self-signed servers; not safe for production.
     var allowSelfSignedTLS: Bool = true
+
+    /// Use SRTP for media (SDES key exchange in SDP). When true the
+    /// offer's m= line uses RTP/SAVP and an a=crypto: line carries the
+    /// master key. Only AES_CM_128_HMAC_SHA1_80 is supported.
+    var useSRTP: Bool = false
 }

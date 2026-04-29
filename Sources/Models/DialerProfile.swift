@@ -26,6 +26,9 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// Accept any TLS server certificate. Convenient for dev.
     var allowSelfSignedTLS: Bool = true
 
+    /// Use SRTP for media (SDES key exchange).
+    var useSRTP: Bool = false
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -42,7 +45,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         callDuration: Double = 30,
         codecs: [CodecKind] = [.pcmu, .pcma],
         transportKind: SIPTransportKind = .udp,
-        allowSelfSignedTLS: Bool = true
+        allowSelfSignedTLS: Bool = true,
+        useSRTP: Bool = false
     ) {
         self.id = id
         self.name = name
@@ -60,6 +64,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.codecs = codecs
         self.transportKind = transportKind
         self.allowSelfSignedTLS = allowSelfSignedTLS
+        self.useSRTP = useSRTP
     }
 
     /// Custom decoder that defaults `codecs` for older saved profiles
@@ -82,6 +87,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.codecs = (try? c.decode([CodecKind].self, forKey: .codecs)) ?? [.pcmu, .pcma]
         self.transportKind = (try? c.decode(SIPTransportKind.self, forKey: .transportKind)) ?? .udp
         self.allowSelfSignedTLS = (try? c.decode(Bool.self, forKey: .allowSelfSignedTLS)) ?? true
+        self.useSRTP = (try? c.decode(Bool.self, forKey: .useSRTP)) ?? false
     }
 
     func callConfig(authPassword: String) -> SIPCallConfig {
@@ -100,6 +106,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.codecs = codecs.isEmpty ? [.pcmu, .pcma] : codecs
         cfg.transportKind = transportKind
         cfg.allowSelfSignedTLS = allowSelfSignedTLS
+        cfg.useSRTP = useSRTP
         return cfg
     }
 }

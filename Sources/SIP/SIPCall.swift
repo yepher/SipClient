@@ -55,6 +55,12 @@ final class SIPCall: @unchecked Sendable {
     private(set) var negotiatedCodec: CodecKind = .pcmu
     private(set) var negotiatedDTMFPT: UInt8?
 
+    /// Our SDES offer (used to encrypt outbound RTP). Generated once
+    /// per call when `cfg.useSRTP` is true.
+    private var outboundCrypto: SDPCryptoLine?
+    /// Peer's SDES line from the answer (used to decrypt inbound RTP).
+    private var inboundCrypto: SDPCryptoLine?
+
     private(set) var answered = false
     private(set) var hungup = false
 
@@ -98,6 +104,13 @@ final class SIPCall: @unchecked Sendable {
         let rtp = try UDPSocket(localPort: cfg.localRTPPort)
         self.sipTransport = transport
         self.rtpSocket = rtp
+
+        // Generate our outbound SRTP crypto if SDES is enabled. This
+        // gets serialized into the SDP offer; the peer's matching line
+        // in the answer fills `inboundCrypto`.
+        if cfg.useSRTP {
+            outboundCrypto = SDPCryptoLine.random()
+        }
         emitInfo("SIP transport: \(cfg.transportKind.displayName) "
                  + "→ \(cfg.sipHost):\(cfg.sipPort), local "
                  + "\(transport.localIP.isEmpty ? cfg.localIP : transport.localIP):\(transport.localPort)")
@@ -216,6 +229,7 @@ final class SIPCall: @unchecked Sendable {
                 negotiatedPT = ans.audioPT
                 negotiatedCodec = ans.codec
                 negotiatedDTMFPT = ans.dtmfPT
+                inboundCrypto = ans.crypto
 
                 let ack = buildACK(toTag: toTag)
                 recordSent(method: "ACK", raw: ack)
@@ -246,11 +260,25 @@ final class SIPCall: @unchecked Sendable {
 
         // Media phase: kick off RTP send/recv and notify the AppState so it
         // can wire up mic capture and speaker playback.
+        // SRTP keys: our offer for outbound, peer's answer for inbound.
+        // If we offered SRTP but the peer answered without a crypto line,
+        // we fall back to plain RTP for that direction.
+        let outCrypto = (cfg.useSRTP && inboundCrypto != nil) ? outboundCrypto : nil
+        let inCrypto = inboundCrypto
+        if cfg.useSRTP {
+            if outCrypto != nil && inCrypto != nil {
+                emitInfo("SRTP enabled (\(outCrypto!.suite))")
+            } else {
+                emitInfo("SRTP requested but peer did not negotiate; using plain RTP")
+            }
+        }
         let rtpSession = RTPSession(socket: rtp,
                                     remoteHost: remoteRTPHost,
                                     remotePort: remoteRTPPort,
                                     payloadType: negotiatedPT,
-                                    codec: negotiatedCodec)
+                                    codec: negotiatedCodec,
+                                    outboundCrypto: outCrypto,
+                                    inboundCrypto: inCrypto)
         rtpSession.dtmfPT = negotiatedDTMFPT
         onMediaReady?(rtpSession)
         rtpSession.startSending()
@@ -326,7 +354,9 @@ final class SIPCall: @unchecked Sendable {
         let rtpIP = publicRTPIP
         let rtpPort = publicRTPPort
         let contactURI = "sip:\(cfg.fromUser)@\(sipIP):\(sipPort)"
-        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort, codecs: cfg.codecs)
+        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort,
+                                      codecs: cfg.codecs,
+                                      crypto: outboundCrypto)
 
         var s = ""
         s += "INVITE \(toURI) SIP/2.0\r\n"
@@ -370,7 +400,9 @@ final class SIPCall: @unchecked Sendable {
         let rtpIP = publicRTPIP
         let rtpPort = publicRTPPort
         let contactURI = "sip:\(cfg.fromUser)@\(sipIP):\(sipPort)"
-        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort, codecs: cfg.codecs)
+        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort,
+                                      codecs: cfg.codecs,
+                                      crypto: outboundCrypto)
 
         let authLine =
             "\(authHeaderName): Digest username=\"\(authUser)\"," +

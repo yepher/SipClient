@@ -23,6 +23,8 @@
 		A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */; };
 		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
 		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
+		C2D3E4F50607080910111213 /* SRTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F50607080910111214 /* SRTP.swift */; };
+		C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60708091011121315 /* SRTPCrypto.swift */; };
 		E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1020304050607080A0B0C0D /* SIPTransport.swift */; };
 		E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2030405060708090A0B0C0E /* StreamSIPTransport.swift */; };
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
@@ -68,6 +70,8 @@
 		B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerPlayback.swift; sourceTree = "<group>"; };
 		D1E1F1020304050607A8B9CD /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
 		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
+		D3E4F50607080910111214 /* SRTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTP.swift; sourceTree = "<group>"; };
+		D4E5F60708091011121315 /* SRTPCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTPCrypto.swift; sourceTree = "<group>"; };
 		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
 		F2030405060708090A0B0C0E /* StreamSIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSIPTransport.swift; sourceTree = "<group>"; };
 		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
@@ -104,6 +108,8 @@
 				4920A5B0B76F41B91A524FBD /* G711.swift */,
 				D2E2F2030405060708A9BACE /* G722.swift */,
 				AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */,
+				D3E4F50607080910111214 /* SRTP.swift */,
+				D4E5F60708091011121315 /* SRTPCrypto.swift */,
 			);
 			path = RTP;
 			sourceTree = "<group>";
@@ -287,6 +293,8 @@
 				A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */,
 				C0D0E0F010203040506A7B8C /* Codec.swift in Sources */,
 				C1D1E1F11203040506A7B8CD /* G722.swift in Sources */,
+				C2D3E4F50607080910111213 /* SRTP.swift in Sources */,
+				C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */,
 				E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */,
 				E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,

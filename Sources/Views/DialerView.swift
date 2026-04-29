@@ -193,6 +193,9 @@ struct DialerView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Divider()
+            Toggle("Use SRTP (SDES, AES_CM_128_HMAC_SHA1_80)",
+                   isOn: bind(\.useSRTP))
         }
     }
 
@@ -263,7 +266,8 @@ struct DialerView: View {
                         callDuration: p.callDuration,
                         codecs: p.codecs,
                         transportKind: p.transportKind,
-                        allowSelfSignedTLS: p.allowSelfSignedTLS
+                        allowSelfSignedTLS: p.allowSelfSignedTLS,
+                        useSRTP: p.useSRTP
                     )
                     appState.upsertProfile(p)
                     appState.selectProfile(p.id)
