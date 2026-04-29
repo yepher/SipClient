@@ -20,6 +20,7 @@
 		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */; };
+		A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */; };
 		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
 		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
 		E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1020304050607080A0B0C0D /* SIPTransport.swift */; };
@@ -64,6 +65,7 @@
 		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
 		B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
+		B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerPlayback.swift; sourceTree = "<group>"; };
 		D1E1F1020304050607A8B9CD /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
 		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
 		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				90C4A45FD677688E94478215 /* LevelMeter.swift */,
 				BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */,
 				B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */,
+				B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */,
 				309E10E277E500AF96790CD4 /* WAVFile.swift */,
 			);
 			path = Audio;
@@ -281,6 +284,7 @@
 				FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */,
 				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */,
+				A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */,
 				C0D0E0F010203040506A7B8C /* Codec.swift in Sources */,
 				C1D1E1F11203040506A7B8CD /* G722.swift in Sources */,
 				E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */,

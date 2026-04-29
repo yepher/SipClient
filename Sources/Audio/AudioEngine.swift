@@ -42,17 +42,14 @@ final class AudioEngine: ObservableObject {
     /// into the wire log.
     var onDiagnostic: ((String) -> Void)?
 
-    private let engine = AVAudioEngine()
-    private let player = AVAudioPlayerNode()
-    /// Player → mainMixer connection format. Mutates per call so playback
-    /// matches the negotiated codec's native rate (8 kHz for G.711,
-    /// 16 kHz for G.722). Reconnect requires the engine to be stopped.
-    private var playFormat: AVAudioFormat
-    /// Mic capture is done via AVCaptureSession instead of AVAudioEngine's
-    /// input node — the latter is unreliable on macOS (delivers a single
-    /// buffer and stalls; VPIO fails to construct an aggregate device on
-    /// some Macs). AVAudioEngine is now used only for playback.
+    /// Mic capture and speaker playback both use AudioQueueServices so
+    /// `kAudioQueueProperty_CurrentDevice` can route them to a specific
+    /// device (`MicCapture` for input, `SpeakerPlayback` for output).
+    /// AVAudioEngine isn't used at all — its `outputNode.audioUnit`
+    /// doesn't reliably accept a `CurrentDevice` property change at
+    /// runtime, which broke device routing for AirPods etc.
     private let micCapture = MicCapture()
+    private let speaker = SpeakerPlayback()
 
     private let recordBuffer = LockedSampleBuffer()
     private var levelTimer: AnyCancellable?
@@ -70,16 +67,7 @@ final class AudioEngine: ObservableObject {
     let micFrameCount = ThreadsafeCounter()
     let micPeakTracker = PeakTracker()
 
-    init() {
-        guard let f = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                    sampleRate: 8000, channels: 1, interleaved: false)
-        else {
-            fatalError("Could not build playback AVAudioFormat")
-        }
-        self.playFormat = f
-        engine.attach(player)
-        engine.connect(player, to: engine.mainMixerNode, format: playFormat)
-    }
+    init() {}
 
     // MARK: - Device selection
 
@@ -124,39 +112,26 @@ final class AudioEngine: ObservableObject {
         objectWillChange.send()
     }
 
+    /// Set the output device. Speaker playback goes through AudioQueueServices,
+    /// which takes the device's UID (`kAudioQueueProperty_CurrentDevice`).
+    /// We resolve the UID from the AudioDeviceID via AudioDevices and
+    /// restart the playback queue if it's running so the new route takes
+    /// effect immediately.
     func setOutputDevice(_ id: AudioDeviceID) {
         preferredOutputDeviceID = id
-        let wasRunning = engine.isRunning
-        if wasRunning { engine.stop() }
-        applyOutputDevice()
-        if wasRunning {
-            do { try engine.start(); player.play() }
-            catch { onDiagnostic?("Restart failed: \(error.localizedDescription)") }
+        let uid = AudioDevices.list(input: false).first(where: { $0.id == id })?.uid
+        speaker.preferredDeviceUID = uid
+        onDiagnostic?("Selected output device id=\(id) uid=\(uid ?? "<default>")")
+
+        if speaker.isRunning {
+            speaker.stop()
+            do {
+                try speaker.start()
+            } catch {
+                onDiagnostic?("Restart speaker after device change failed: \(error.localizedDescription)")
+            }
         }
-        onDiagnostic?("Selected output device id=\(id)")
         objectWillChange.send()
-    }
-
-    /// Input device routing is handled by AVCaptureSession picking the
-    /// system default. This is a placeholder for when we map AudioDeviceID
-    /// to AVCaptureDevice.uniqueID. Currently no-op.
-    private func applyInputDevice() { }
-
-    private func applyOutputDevice() {
-        guard preferredOutputDeviceID != kAudioObjectUnknown,
-              let au = engine.outputNode.audioUnit else { return }
-        var deviceID = preferredOutputDeviceID
-        let status = AudioUnitSetProperty(
-            au,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &deviceID,
-            UInt32(MemoryLayout<AudioDeviceID>.size)
-        )
-        if status != noErr {
-            onDiagnostic?("Failed to set output device (OSStatus \(status))")
-        }
     }
 
     static func requestMicAuthorization() async -> Bool {
@@ -165,22 +140,6 @@ final class AudioEngine: ObservableObject {
         case .notDetermined: return await AVCaptureDevice.requestAccess(for: .audio)
         case .denied, .restricted: return false
         @unknown default: return false
-        }
-    }
-
-    private func ensureRunning() throws {
-        if !engine.isRunning {
-            applyOutputDevice()
-            do {
-                try engine.start()
-                onDiagnostic?("AVAudioEngine started")
-            } catch {
-                onDiagnostic?("AVAudioEngine start failed: \(error.localizedDescription)")
-                throw error
-            }
-        }
-        if !player.isPlaying {
-            player.play()
         }
     }
 
@@ -205,25 +164,19 @@ final class AudioEngine: ObservableObject {
             ])
         }
 
-        // Reconfigure player for this call's codec rate (8 kHz for G.711,
-        // 16 kHz for G.722). The player → mainMixer connection format must
-        // match what enqueuePlayback will produce.
-        if engine.isRunning { engine.stop() }
-        engine.disconnectNodeOutput(player)
-        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
-                                         sampleRate: codec.inputSampleRate,
-                                         channels: 1, interleaved: false)
-        else {
-            throw NSError(domain: "AudioEngine", code: 101, userInfo: [
-                NSLocalizedDescriptionKey: "Could not build playback format for \(codec.rtpmapName)"
-            ])
+        // Configure the speaker playback queue for this call's codec
+        // rate (8 kHz for G.711, 16 kHz for G.722) and start it.
+        if speaker.isRunning { speaker.stop() }
+        speaker.sampleRate = codec.inputSampleRate
+        let onDiagS = onDiagnostic
+        speaker.onDiagnostic = { msg in onDiagS?(msg) }
+        do {
+            try speaker.start()
+        } catch {
+            onDiagnostic?("SpeakerPlayback start failed: \(error.localizedDescription)")
+            throw error
         }
-        playFormat = format
-        engine.connect(player, to: engine.mainMixerNode, format: playFormat)
         onDiagnostic?("Codec \(codec.rtpmapName) — playback at \(Int(codec.inputSampleRate)) Hz")
-
-        // Start playback engine so RTP receive can flow.
-        try ensureRunning()
 
         // Mic capture rate must match the encoder's input rate.
         micCapture.sampleRate = codec.inputSampleRate
@@ -277,6 +230,7 @@ final class AudioEngine: ObservableObject {
         guard mode == .call else { return }
         micCapture.stop()
         micCapture.onSamples = nil
+        speaker.stop()
         mode = .idle
         levelMeter.reset()
         stopLevelTimer()
@@ -317,18 +271,24 @@ final class AudioEngine: ObservableObject {
 
     // MARK: - Playback
 
+    /// Enqueue Int16 PCM for the speaker. If called while no call is
+    /// active (e.g. clip preview), boots the speaker queue at 8 kHz on
+    /// the user's preferred output device.
     func enqueuePlayback(samples: [Int16]) {
-        guard !samples.isEmpty,
-              let buf = AVAudioPCMBuffer(pcmFormat: playFormat,
-                                         frameCapacity: AVAudioFrameCount(samples.count))
-        else { return }
-        buf.frameLength = AVAudioFrameCount(samples.count)
-        guard let dst = buf.floatChannelData?[0] else { return }
-        for i in 0..<samples.count {
-            dst[i] = Float(samples[i]) / 32768.0
+        guard !samples.isEmpty else { return }
+        if !speaker.isRunning {
+            // Default rate for clip preview when no call is active.
+            speaker.sampleRate = 8000
+            let onDiag = onDiagnostic
+            speaker.onDiagnostic = { msg in onDiag?(msg) }
+            do {
+                try speaker.start()
+            } catch {
+                onDiagnostic?("SpeakerPlayback start failed: \(error.localizedDescription)")
+                return
+            }
         }
-        try? ensureRunning()
-        player.scheduleBuffer(buf, completionHandler: nil)
+        speaker.enqueue(samples: samples)
     }
 
     // MARK: - Internal: level timer
