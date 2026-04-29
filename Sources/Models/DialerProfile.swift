@@ -21,6 +21,11 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// Decoded with a default for older saved profiles.
     var codecs: [CodecKind] = [.pcmu, .pcma]
 
+    /// SIP signalling transport. UDP / TCP / TLS.
+    var transportKind: SIPTransportKind = .udp
+    /// Accept any TLS server certificate. Convenient for dev.
+    var allowSelfSignedTLS: Bool = true
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -35,7 +40,9 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         localSIPPort: UInt16 = 5060,
         localRTPPort: UInt16 = 10000,
         callDuration: Double = 30,
-        codecs: [CodecKind] = [.pcmu, .pcma]
+        codecs: [CodecKind] = [.pcmu, .pcma],
+        transportKind: SIPTransportKind = .udp,
+        allowSelfSignedTLS: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -51,6 +58,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.localRTPPort = localRTPPort
         self.callDuration = callDuration
         self.codecs = codecs
+        self.transportKind = transportKind
+        self.allowSelfSignedTLS = allowSelfSignedTLS
     }
 
     /// Custom decoder that defaults `codecs` for older saved profiles
@@ -71,6 +80,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.localRTPPort = try c.decode(UInt16.self, forKey: .localRTPPort)
         self.callDuration = try c.decode(Double.self, forKey: .callDuration)
         self.codecs = (try? c.decode([CodecKind].self, forKey: .codecs)) ?? [.pcmu, .pcma]
+        self.transportKind = (try? c.decode(SIPTransportKind.self, forKey: .transportKind)) ?? .udp
+        self.allowSelfSignedTLS = (try? c.decode(Bool.self, forKey: .allowSelfSignedTLS)) ?? true
     }
 
     func callConfig(authPassword: String) -> SIPCallConfig {
@@ -87,6 +98,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.localRTPPort = localRTPPort
         cfg.callDuration = callDuration
         cfg.codecs = codecs.isEmpty ? [.pcmu, .pcma] : codecs
+        cfg.transportKind = transportKind
+        cfg.allowSelfSignedTLS = allowSelfSignedTLS
         return cfg
     }
 }

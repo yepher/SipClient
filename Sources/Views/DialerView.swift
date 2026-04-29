@@ -105,10 +105,37 @@ struct DialerView: View {
     @ViewBuilder
     private var targetSection: some View {
         Section("Target") {
+            HStack {
+                Text("Transport")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Picker("", selection: Binding(
+                    get: { draft.transportKind },
+                    set: { newValue in
+                        let oldDefault = draft.transportKind.defaultPort
+                        draft.transportKind = newValue
+                        // Bump the port to the new transport's default
+                        // when the user is on the previous default.
+                        if draft.sipPort == oldDefault {
+                            draft.sipPort = newValue.defaultPort
+                        }
+                        hasUnsavedChanges = true
+                    }
+                )) {
+                    ForEach(SIPTransportKind.allCases) { t in
+                        Text(t.displayName).tag(t)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 220)
+            }
+            if draft.transportKind == .tls {
+                Toggle("Allow self-signed TLS certificate", isOn: bind(\.allowSelfSignedTLS))
+            }
             TextField("SIP server host", text: bind(\.sipHost),
                       prompt: Text("sip.example.com"))
             TextField("SIP port",
-                      text: portBind(\.sipPort, default: 5060))
+                      text: portBind(\.sipPort, default: draft.transportKind.defaultPort))
             TextField("To URI", text: bind(\.toURI),
                       prompt: Text("sip:+15551234567@sip.example.com"))
         }
@@ -234,7 +261,9 @@ struct DialerView: View {
                         useSTUN: p.useSTUN, stunServer: p.stunServer,
                         localSIPPort: p.localSIPPort, localRTPPort: p.localRTPPort,
                         callDuration: p.callDuration,
-                        codecs: p.codecs
+                        codecs: p.codecs,
+                        transportKind: p.transportKind,
+                        allowSelfSignedTLS: p.allowSelfSignedTLS
                     )
                     appState.upsertProfile(p)
                     appState.selectProfile(p.id)

@@ -26,4 +26,10 @@ struct SIPCallConfig {
     /// The peer's answer picks one. Defaults to PCMU + PCMA for maximum
     /// compatibility.
     var codecs: [CodecKind] = [.pcmu, .pcma]
+
+    /// SIP signalling transport. UDP, TCP, or TLS.
+    var transportKind: SIPTransportKind = .udp
+    /// When TLS, accept any presented server certificate. Convenient for
+    /// dev / self-signed servers; not safe for production.
+    var allowSelfSignedTLS: Bool = true
 }

@@ -41,7 +41,7 @@ final class SIPCall: @unchecked Sendable {
     private(set) var branch = SIPTokens.branch()
     private(set) var cseq: Int = 1
 
-    private(set) var sipSocket: UDPSocket?
+    private(set) var sipTransport: SIPTransport?
     private(set) var rtpSocket: UDPSocket?
 
     private(set) var publicSIPIP: String = ""
@@ -81,16 +81,37 @@ final class SIPCall: @unchecked Sendable {
         }
         config = cfg
 
-        let sip = try UDPSocket(localPort: cfg.localSIPPort)
+        // Build the SIP transport based on the chosen kind.
+        let transport: SIPTransport
+        switch cfg.transportKind {
+        case .udp:
+            transport = try UDPSIPTransport(targetHost: cfg.sipHost,
+                                            targetPort: cfg.sipPort,
+                                            localPort: cfg.localSIPPort)
+        case .tcp, .tls:
+            transport = try StreamSIPTransport(targetHost: cfg.sipHost,
+                                               targetPort: cfg.sipPort,
+                                               kind: cfg.transportKind,
+                                               allowSelfSignedTLS: cfg.allowSelfSignedTLS)
+        }
+        try transport.start()
         let rtp = try UDPSocket(localPort: cfg.localRTPPort)
-        self.sipSocket = sip
+        self.sipTransport = transport
         self.rtpSocket = rtp
-        emitInfo("Bound SIP local port \(sip.localPort), RTP local port \(rtp.localPort)")
+        emitInfo("SIP transport: \(cfg.transportKind.displayName) "
+                 + "→ \(cfg.sipHost):\(cfg.sipPort), local "
+                 + "\(transport.localIP.isEmpty ? cfg.localIP : transport.localIP):\(transport.localPort)")
+        emitInfo("RTP local port \(rtp.localPort)")
 
+        // STUN: only meaningful for the RTP socket and for UDP-SIP. With
+        // TCP/TLS the server already sees our address via the connection
+        // it accepted, and rport semantics don't apply.
         if cfg.useSTUN {
             emitStatus("STUN discovery…")
             let serverArg = cfg.stunServer.isEmpty ? nil : cfg.stunServer
-            if let r = STUN.discover(socket: sip, server: serverArg) {
+            if cfg.transportKind == .udp,
+               let socket = (transport as? UDPSIPTransport)?.socket,
+               let r = STUN.discover(socket: socket, server: serverArg) {
                 publicSIPIP = r.publicIP
                 publicSIPPort = r.publicPort
                 cfg.fromHost = r.publicIP
@@ -103,14 +124,17 @@ final class SIPCall: @unchecked Sendable {
                 emitInfo("STUN RTP public address: \(r.publicIP):\(r.publicPort)")
             }
         }
-        if publicSIPIP.isEmpty { publicSIPIP = cfg.localIP; publicSIPPort = cfg.localSIPPort }
+        if publicSIPIP.isEmpty {
+            publicSIPIP = transport.localIP.isEmpty ? cfg.localIP : transport.localIP
+            publicSIPPort = transport.localPort != 0 ? transport.localPort : cfg.localSIPPort
+        }
         if publicRTPIP.isEmpty { publicRTPIP = cfg.localIP; publicRTPPort = cfg.localRTPPort }
 
         // INVITE phase
         let invite = buildInvite()
         emitStatus("Sending INVITE…")
         recordSent(method: "INVITE", raw: invite)
-        try sip.send(Data(invite.utf8), to: cfg.sipHost, port: cfg.sipPort)
+        try transport.send(Data(invite.utf8))
 
         let T1: TimeInterval = 0.5
         var retransmitInterval = T1
@@ -118,30 +142,31 @@ final class SIPCall: @unchecked Sendable {
         var timerBDeadline = Date().addingTimeInterval(64 * T1)
         var provisionalReceived = false
         var answerDeadline = Date().addingTimeInterval(cfg.answerTimeout)
+        let needsRetransmit = cfg.transportKind.requiresRetransmits
 
         while !answered && Date() < answerDeadline && !hangupRequested {
-            let received: (data: Data, host: String, port: UInt16)?
+            let receivedData: Data?
             do {
-                received = try sip.recvOnce(timeout: 0.25)
+                receivedData = try transport.recvMessage(timeout: 0.25)
             } catch {
                 emitError("recv error: \(error.localizedDescription)")
                 continue
             }
-            guard let r = received else {
+            guard let data = receivedData else {
                 let now = Date()
-                if !provisionalReceived && now >= nextRetransmit {
+                if needsRetransmit && !provisionalReceived && now >= nextRetransmit {
                     if now >= timerBDeadline {
                         throw SIPCallError.noResponse("\(cfg.sipHost):\(cfg.sipPort)")
                     }
                     recordSent(method: "INVITE (retransmit)", raw: invite)
-                    try sip.send(Data(invite.utf8), to: cfg.sipHost, port: cfg.sipPort)
+                    try transport.send(Data(invite.utf8))
                     retransmitInterval = min(retransmitInterval * 2, 4.0)
                     nextRetransmit = now.addingTimeInterval(retransmitInterval)
                 }
                 continue
             }
 
-            guard let resp = SIPParser.parseResponse(r.data) else { continue }
+            guard let resp = SIPParser.parseResponse(data) else { continue }
             recordReceived(resp)
 
             let status = resp.statusCode
@@ -164,7 +189,7 @@ final class SIPCall: @unchecked Sendable {
                 }
                 let ack = buildACK(toTag: SIPHeaders.tagParam(resp.firstHeader("to") ?? "") ?? "")
                 recordSent(method: "ACK", raw: ack)
-                try sip.send(Data(ack.utf8), to: cfg.sipHost, port: cfg.sipPort)
+                try transport.send(Data(ack.utf8))
 
                 let chHeader = (status == 401)
                     ? (resp.firstHeader("www-authenticate") ?? "")
@@ -175,7 +200,7 @@ final class SIPCall: @unchecked Sendable {
                 let authInvite = buildInviteWithAuth(authHeaderName: authHeaderName,
                                                      challenge: challenge)
                 recordSent(method: "INVITE (auth)", raw: authInvite)
-                try sip.send(Data(authInvite.utf8), to: cfg.sipHost, port: cfg.sipPort)
+                try transport.send(Data(authInvite.utf8))
 
                 provisionalReceived = false
                 retransmitInterval = T1
@@ -194,7 +219,7 @@ final class SIPCall: @unchecked Sendable {
 
                 let ack = buildACK(toTag: toTag)
                 recordSent(method: "ACK", raw: ack)
-                try sip.send(Data(ack.utf8), to: cfg.sipHost, port: cfg.sipPort)
+                try transport.send(Data(ack.utf8))
 
                 answered = true
                 emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT) codec=\(negotiatedCodec.rtpmapName)")
@@ -210,12 +235,12 @@ final class SIPCall: @unchecked Sendable {
             if hangupRequested {
                 let cancel = buildCancel()
                 recordSent(method: "CANCEL", raw: cancel)
-                try? sip.send(Data(cancel.utf8), to: cfg.sipHost, port: cfg.sipPort)
+                try? transport.send(Data(cancel.utf8))
                 throw SIPCallError.cancelled
             }
             let cancel = buildCancel()
             recordSent(method: "CANCEL", raw: cancel)
-            try? sip.send(Data(cancel.utf8), to: cfg.sipHost, port: cfg.sipPort)
+            try? transport.send(Data(cancel.utf8))
             throw SIPCallError.notAnswered(seconds: Int(cfg.answerTimeout))
         }
 
@@ -237,15 +262,15 @@ final class SIPCall: @unchecked Sendable {
 
         let callEnd = Date().addingTimeInterval(cfg.callDuration)
         while !hungup && Date() < callEnd && !hangupRequested {
-            let received: (data: Data, host: String, port: UInt16)?
+            let receivedData: Data?
             do {
-                received = try sip.recvOnce(timeout: 0.25)
+                receivedData = try transport.recvMessage(timeout: 0.25)
             } catch {
                 emitError("recv error: \(error.localizedDescription)")
                 continue
             }
-            guard let r = received,
-                  let either = SIPParser.parseMessage(r.data)
+            guard let data = receivedData,
+                  let either = SIPParser.parseMessage(data)
             else { continue }
 
             switch either {
@@ -253,7 +278,7 @@ final class SIPCall: @unchecked Sendable {
                 recordReceivedRequest(req)
                 if req.method == "BYE" {
                     let ok = build200OK(forRequest: req)
-                    try? sip.send(Data(ok.utf8), to: r.host, port: r.port)
+                    try? transport.send(Data(ok.utf8))
                     recordSent(method: "200 OK (to BYE)", raw: ok)
                     hungup = true
                     emitStatus("Remote hung up")
@@ -266,11 +291,11 @@ final class SIPCall: @unchecked Sendable {
         if !hungup {
             let bye = buildBYE()
             recordSent(method: "BYE", raw: bye)
-            try? sip.send(Data(bye.utf8), to: cfg.sipHost, port: cfg.sipPort)
+            try? transport.send(Data(bye.utf8))
             // Wait briefly for response
             for _ in 0..<8 {
-                if let r = try? sip.recvOnce(timeout: 0.25),
-                   let resp = SIPParser.parseResponse(r.data) {
+                if let data = try? transport.recvMessage(timeout: 0.25),
+                   let resp = SIPParser.parseResponse(data) {
                     recordReceived(resp)
                     break
                 }
@@ -278,9 +303,19 @@ final class SIPCall: @unchecked Sendable {
             hungup = true
             emitStatus("Hung up")
         }
+        transport.close()
     }
 
     // MARK: - Builders
+
+    /// `Via: SIP/2.0/<transport> ip:port;branch=…[;rport]`. `rport` is
+    /// only meaningful for UDP NAT traversal (RFC 3581); we omit it for
+    /// stream transports.
+    private func via(branch: String) -> String {
+        let proto = config.transportKind.viaName
+        let suffix = config.transportKind == .udp ? ";rport" : ""
+        return "Via: SIP/2.0/\(proto) \(publicSIPIP):\(publicSIPPort);branch=\(branch)\(suffix)"
+    }
 
     private func buildInvite() -> String {
         let cfg = config
@@ -295,7 +330,7 @@ final class SIPCall: @unchecked Sendable {
 
         var s = ""
         s += "INVITE \(toURI) SIP/2.0\r\n"
-        s += "Via: SIP/2.0/UDP \(sipIP):\(sipPort);branch=\(branch);rport\r\n"
+        s += "\(via(branch: branch))\r\n"
         s += "Max-Forwards: 70\r\n"
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: <\(toURI)>\r\n"
@@ -347,7 +382,7 @@ final class SIPCall: @unchecked Sendable {
 
         var s = ""
         s += "INVITE \(toURI) SIP/2.0\r\n"
-        s += "Via: SIP/2.0/UDP \(sipIP):\(sipPort);branch=\(branch);rport\r\n"
+        s += "\(via(branch: branch))\r\n"
         s += "Max-Forwards: 70\r\n"
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: <\(toURI)>\r\n"
@@ -368,13 +403,11 @@ final class SIPCall: @unchecked Sendable {
         let cfg = config
         let toURI = cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI
         let fromURI = "sip:\(cfg.fromUser)@\(cfg.fromHost)"
-        let sipIP = publicSIPIP
-        let sipPort = publicSIPPort
         let toHeader = toTag.isEmpty ? "<\(toURI)>" : "<\(toURI)>;tag=\(toTag)"
 
         var s = ""
         s += "ACK \(toURI) SIP/2.0\r\n"
-        s += "Via: SIP/2.0/UDP \(sipIP):\(sipPort);branch=\(SIPTokens.branch());rport\r\n"
+        s += "\(via(branch: SIPTokens.branch()))\r\n"
         s += "Max-Forwards: 70\r\n"
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: \(toHeader)\r\n"
@@ -389,12 +422,10 @@ final class SIPCall: @unchecked Sendable {
         let cfg = config
         let toURI = cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI
         let fromURI = "sip:\(cfg.fromUser)@\(cfg.fromHost)"
-        let sipIP = publicSIPIP
-        let sipPort = publicSIPPort
 
         var s = ""
         s += "CANCEL \(toURI) SIP/2.0\r\n"
-        s += "Via: SIP/2.0/UDP \(sipIP):\(sipPort);branch=\(branch);rport\r\n"
+        s += "\(via(branch: branch))\r\n"
         s += "Max-Forwards: 70\r\n"
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: <\(toURI)>\r\n"
@@ -409,14 +440,12 @@ final class SIPCall: @unchecked Sendable {
         let cfg = config
         let toURI = cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI
         let fromURI = "sip:\(cfg.fromUser)@\(cfg.fromHost)"
-        let sipIP = publicSIPIP
-        let sipPort = publicSIPPort
         cseq += 1
         let toHeader = toTag.isEmpty ? "<\(toURI)>" : "<\(toURI)>;tag=\(toTag)"
 
         var s = ""
         s += "BYE \(toURI) SIP/2.0\r\n"
-        s += "Via: SIP/2.0/UDP \(sipIP):\(sipPort);branch=\(SIPTokens.branch());rport\r\n"
+        s += "\(via(branch: SIPTokens.branch()))\r\n"
         s += "Max-Forwards: 70\r\n"
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: \(toHeader)\r\n"
