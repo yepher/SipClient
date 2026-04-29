@@ -18,6 +18,10 @@ final class MicCapture: NSObject, @unchecked Sendable {
 
     var onDiagnostic: (@Sendable (String) -> Void)?
 
+    /// CoreAudio device UID to capture from. `nil` uses the system
+    /// default input. Changes take effect on the next `start()`.
+    var preferredDeviceUID: String?
+
     private static let captureSampleRate: Double = 16000
     private static let captureBufferFrames: UInt32 = 1600 // 100 ms at 16 kHz
     private static let bufferCount = 3
@@ -77,6 +81,26 @@ final class MicCapture: NSObject, @unchecked Sendable {
             throw NSError(domain: "MicCapture", code: Int(status), userInfo: [
                 NSLocalizedDescriptionKey: "AudioQueueNewInput failed (OSStatus \(status))"
             ])
+        }
+
+        // Route to a specific device, if one was chosen. AudioQueue takes
+        // the device's UID as a CFString. Must be set after creation and
+        // before AudioQueueStart.
+        if let uid = preferredDeviceUID {
+            var cfUID = uid as CFString
+            let setStatus = withUnsafeMutablePointer(to: &cfUID) { ptr -> OSStatus in
+                AudioQueueSetProperty(
+                    q,
+                    kAudioQueueProperty_CurrentDevice,
+                    ptr,
+                    UInt32(MemoryLayout<CFString>.size)
+                )
+            }
+            if setStatus != noErr {
+                onDiagnostic?("MicCapture failed to route to UID \(uid) (OSStatus \(setStatus)); using system default")
+            } else {
+                onDiagnostic?("MicCapture routed to UID \(uid)")
+            }
         }
 
         let bytesPerFrame = asbd.mBytesPerFrame

@@ -81,16 +81,29 @@ final class AudioEngine: ObservableObject {
         return AudioDevices.systemDefault(input: false) ?? kAudioObjectUnknown
     }
 
-    /// Set the input device. Mic capture is now via AVCaptureSession;
-    /// device routing happens at session-configuration time. For now
-    /// we only support the system default; explicit device routing for
-    /// AVCaptureSession can be added later by mapping AudioDeviceID to
-    /// AVCaptureDevice.uniqueID. Stored so the dropdown reflects the user's
-    /// choice for the output side.
+    /// Set the input device. Mic capture goes through AudioQueueServices,
+    /// which takes the device's UID. We resolve the UID from the
+    /// AudioDeviceID via AudioDevices and restart MicCapture if a call
+    /// or recording is in progress.
     func setInputDevice(_ id: AudioDeviceID) {
         preferredInputDeviceID = id
-        applyInputDevice()
-        onDiagnostic?("Selected input device id=\(id)")
+        let uid = AudioDevices.list(input: true).first(where: { $0.id == id })?.uid
+        micCapture.preferredDeviceUID = uid
+        onDiagnostic?("Selected input device id=\(id) uid=\(uid ?? "<default>")")
+
+        // If we're actively capturing, restart MicCapture with the new
+        // route. The queue is rebuilt because kAudioQueueProperty_CurrentDevice
+        // can only be set before AudioQueueStart.
+        if mode == .call || mode == .record {
+            let wasMode = mode
+            micCapture.stop()
+            do {
+                try micCapture.start()
+            } catch {
+                onDiagnostic?("Restart after input device change failed: \(error.localizedDescription)")
+                if wasMode == .call { stopCallMode() }
+            }
+        }
         objectWillChange.send()
     }
 
