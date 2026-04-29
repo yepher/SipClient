@@ -62,6 +62,7 @@ struct AudioLibraryView: View {
                     ForEach(appState.audioClips) { clip in
                         ClipRow(clip: clip,
                                 callActive: appState.callInProgress,
+                                onRename: { newName in appState.renameClip(clip, to: newName) },
                                 onPreview: { appState.previewClip(clip) },
                                 onPlayIntoCall: { appState.playClipIntoCall(clip) },
                                 onDelete: { appState.deleteClip(clip) })
@@ -100,16 +101,30 @@ struct AudioLibraryView: View {
 private struct ClipRow: View {
     let clip: AudioClip
     let callActive: Bool
+    let onRename: (String) -> Void
     let onPreview: () -> Void
     let onPlayIntoCall: () -> Void
     let onDelete: () -> Void
+
+    @State private var editing: Bool = false
+    @State private var editText: String = ""
 
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "waveform")
                 .foregroundStyle(.secondary)
             VStack(alignment: .leading) {
-                Text(clip.name)
+                if editing {
+                    TextField("Name", text: $editText, onCommit: commitRename)
+                        .textFieldStyle(.roundedBorder)
+                        .onExitCommand { editing = false }
+                } else {
+                    Text(clip.name)
+                        .onTapGesture(count: 2) {
+                            editText = clip.name
+                            editing = true
+                        }
+                }
                 Text(String(format: "%.1fs", clip.durationSeconds))
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -138,5 +153,20 @@ private struct ClipRow: View {
             .buttonStyle(.bordered)
         }
         .padding(.vertical, 4)
+        .contextMenu {
+            Button("Rename") {
+                editText = clip.name
+                editing = true
+            }
+            Button("Delete", role: .destructive, action: onDelete)
+        }
+    }
+
+    private func commitRename() {
+        let trimmed = editText.trimmingCharacters(in: .whitespaces)
+        if !trimmed.isEmpty && trimmed != clip.name {
+            onRename(trimmed)
+        }
+        editing = false
     }
 }

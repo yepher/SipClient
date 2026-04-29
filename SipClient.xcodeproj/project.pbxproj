@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */; };
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
 		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
 		3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */; };
@@ -21,6 +22,7 @@
 		B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C5DA24C5E19148C27D46D /* WireLogEntry.swift */; };
 		B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091382AF4736A88FFCA6EB39 /* SDP.swift */; };
 		B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */; };
+		BFF4857501F381DE543C14E8 /* InCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B44EE494E591B8E7A59BDB /* InCallView.swift */; };
 		C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F7D22A8A46A1E2C92618A0 /* STUN.swift */; };
 		D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7085A2F81C837A2152219F /* AudioLibraryView.swift */; };
 		D49A264EF78E3B699591B6EF /* G711.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4920A5B0B76F41B91A524FBD /* G711.swift */; };
@@ -28,6 +30,7 @@
 		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
 		F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766643A131738D6EF1467CA3 /* SipClientApp.swift */; };
 		FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */; };
+		FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C4A45FD677688E94478215 /* LevelMeter.swift */; };
 		FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6F1B5011F182DC913B3203 /* AppState.swift */; };
 		FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309E10E277E500AF96790CD4 /* WAVFile.swift */; };
 /* End PBXBuildFile section */
@@ -42,10 +45,13 @@
 		3935F70332C886A6EE9DE5B9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		4920A5B0B76F41B91A524FBD /* G711.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G711.swift; sourceTree = "<group>"; };
 		616C5DA24C5E19148C27D46D /* WireLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogEntry.swift; sourceTree = "<group>"; };
+		64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerProfile.swift; sourceTree = "<group>"; };
 		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
+		77B44EE494E591B8E7A59BDB /* InCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InCallView.swift; sourceTree = "<group>"; };
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
 		867E2734C4684D7FA23C7484 /* SipClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SipClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBuffer.swift; sourceTree = "<group>"; };
+		90C4A45FD677688E94478215 /* LevelMeter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelMeter.swift; sourceTree = "<group>"; };
 		93CBEEEE944B5F904E5DC7DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
@@ -68,6 +74,7 @@
 				FC7085A2F81C837A2152219F /* AudioLibraryView.swift */,
 				0C3FD7D41D5B05E05D014C3E /* DialerView.swift */,
 				AA55B20DDD93EA0D027570E3 /* InboundView.swift */,
+				77B44EE494E591B8E7A59BDB /* InCallView.swift */,
 				81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */,
 				BAB6086A05371C95986571AC /* WireLogView.swift */,
 			);
@@ -87,6 +94,7 @@
 			isa = PBXGroup;
 			children = (
 				F9CEBEB471B82F2FA682B890 /* AudioClip.swift */,
+				64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */,
 				CC8A56B48A1B633CCCD04662 /* Scenario.swift */,
 				616C5DA24C5E19148C27D46D /* WireLogEntry.swift */,
 			);
@@ -106,6 +114,7 @@
 			children = (
 				C3B361FCC5C7F35618659A5B /* AudioEngine.swift */,
 				8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */,
+				90C4A45FD677688E94478215 /* LevelMeter.swift */,
 				BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */,
 				309E10E277E500AF96790CD4 /* WAVFile.swift */,
 			);
@@ -230,10 +239,13 @@
 				831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */,
 				D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */,
 				41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */,
+				11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */,
 				E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */,
 				FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */,
 				D49A264EF78E3B699591B6EF /* G711.swift in Sources */,
+				BFF4857501F381DE543C14E8 /* InCallView.swift in Sources */,
 				9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */,
+				FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */,
 				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
 				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,

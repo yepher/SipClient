@@ -9,20 +9,20 @@ enum ScenarioStep: Codable, Hashable, Identifiable {
 
     var id: String {
         switch self {
-        case .waitForAnswer: return "waitForAnswer"
+        case .waitForAnswer(let t): return "waitForAnswer-\(t)"
         case .wait(let s): return "wait-\(s)"
-        case .playClip(let id): return "playClip-\(id.uuidString)"
+        case .playClip(let cid): return "playClip-\(cid.uuidString)"
         case .sendDTMF(let d): return "dtmf-\(d)"
         case .hangup: return "hangup"
         }
     }
 
-    var displayName: String {
+    var typeLabel: String {
         switch self {
-        case .waitForAnswer(let t): return "Wait for answer (\(Int(t))s)"
-        case .wait(let s): return "Wait \(s)s"
+        case .waitForAnswer: return "Wait for answer"
+        case .wait: return "Wait"
         case .playClip: return "Play clip"
-        case .sendDTMF(let d): return "Send DTMF \(d)"
+        case .sendDTMF: return "Send DTMF"
         case .hangup: return "Hang up"
         }
     }
@@ -31,11 +31,17 @@ enum ScenarioStep: Codable, Hashable, Identifiable {
 struct Scenario: Identifiable, Codable, Hashable {
     let id: UUID
     var name: String
+    /// If set, running this scenario places a call from this profile first.
+    var profileID: UUID?
     var steps: [ScenarioStep]
 
-    init(id: UUID = UUID(), name: String, steps: [ScenarioStep] = []) {
+    init(id: UUID = UUID(),
+         name: String,
+         profileID: UUID? = nil,
+         steps: [ScenarioStep] = []) {
         self.id = id
         self.name = name
+        self.profileID = profileID
         self.steps = steps
     }
 }

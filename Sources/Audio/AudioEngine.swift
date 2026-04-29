@@ -14,15 +14,18 @@ final class AudioEngine: ObservableObject {
     }
 
     @Published private(set) var mode: Mode = .idle
+    /// Smoothed 0–1 send level (mic). Sampled at ~30 Hz from `levelMeter`.
+    @Published private(set) var sendLevel: Double = 0
+    /// Smoothed 0–1 receive level (decoded RTP). Sampled at ~30 Hz.
+    @Published private(set) var recvLevel: Double = 0
+
+    let levelMeter = LevelMeter()
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private let playFormat: AVAudioFormat
     private var tapInstalled = false
 
-    /// Holds samples appended from the audio thread during record mode.
-    /// Non-isolated so the audio-thread closure can mutate without
-    /// crossing actor boundaries.
     private let recordBuffer = LockedSampleBuffer()
 
     init() {
@@ -34,9 +37,21 @@ final class AudioEngine: ObservableObject {
         self.playFormat = f
         engine.attach(player)
         engine.connect(player, to: engine.mainMixerNode, format: playFormat)
+
+        // 30 Hz level poll. Captures `holder` rather than self to avoid actor
+        // isolation issues — the @Published writes still happen on MainActor
+        // because Task inherits the enclosing isolation.
+        let holder = levelMeter
+        Task { [weak self] in
+            while let self {
+                let snap = holder.snapshot()
+                self.sendLevel = LevelMeter.displayLevel(snap.send)
+                self.recvLevel = LevelMeter.displayLevel(snap.recv)
+                try? await Task.sleep(nanoseconds: 33_000_000)
+            }
+        }
     }
 
-    /// Request mic permission. macOS shows the TCC prompt on first call.
     static func requestMicAuthorization() async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: return true
@@ -59,9 +74,9 @@ final class AudioEngine: ObservableObject {
 
     func startCallMode(micBuffer: FrameBuffer) throws {
         guard mode == .idle else { return }
+        let levels = levelMeter
         try installMicTap { samples in
-            // `samples` is a buffer pointer over the audio thread's lifetime —
-            // copy out before returning.
+            levels.recordSend(samples)
             micBuffer.write(Array(samples))
         }
         try ensureRunning()
@@ -72,6 +87,7 @@ final class AudioEngine: ObservableObject {
         guard mode == .call else { return }
         removeMicTap()
         mode = .idle
+        levelMeter.reset()
     }
 
     // MARK: - Record mode
@@ -87,7 +103,6 @@ final class AudioEngine: ObservableObject {
         mode = .record
     }
 
-    /// Stop recording and return the captured 8 kHz mono Int16 samples.
     func stopRecordMode() -> [Int16] {
         guard mode == .record else { return [] }
         removeMicTap()
@@ -112,7 +127,13 @@ final class AudioEngine: ObservableObject {
         player.scheduleBuffer(buf, completionHandler: nil)
     }
 
-    // MARK: - Internal
+    /// Update the receive level from decoded RTP samples. Called by AppState
+    /// from the RTP onPlaybackPCM hook before forwarding to enqueuePlayback.
+    func recordRecvLevel(_ samples: [Int16]) {
+        levelMeter.recordRecv(samples)
+    }
+
+    // MARK: - Internal: mic tap
 
     /// Install a tap on the mic that delivers 8 kHz mono Int16 chunks to `handler`.
     /// `handler` runs on a CoreAudio thread — keep it short and lock-light.
@@ -121,8 +142,11 @@ final class AudioEngine: ObservableObject {
         let inputNode = engine.inputNode
         let inputFormat = inputNode.outputFormat(forBus: 0)
 
+        // Non-interleaved is required for `int16ChannelData` to return a
+        // non-nil pointer. (For mono the data layout is the same either
+        // way; the flag just controls which accessor populates.)
         guard let target = AVAudioFormat(commonFormat: .pcmFormatInt16,
-                                         sampleRate: 8000, channels: 1, interleaved: true)
+                                         sampleRate: 8000, channels: 1, interleaved: false)
         else {
             throw NSError(domain: "AudioEngine", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "Cannot build target audio format"])
@@ -154,8 +178,19 @@ final class AudioEngine: ObservableObject {
             if status == .error { return }
 
             let n = Int(outBuf.frameLength)
-            guard n > 0, let ptr = outBuf.int16ChannelData?[0] else { return }
-            handler(UnsafeBufferPointer(start: ptr, count: n))
+            guard n > 0 else { return }
+
+            // Prefer int16ChannelData; fall back to the raw audioBufferList
+            // (works for either interleaved or planar formats).
+            if let ptr = outBuf.int16ChannelData?[0] {
+                handler(UnsafeBufferPointer(start: ptr, count: n))
+                return
+            }
+            let abl = outBuf.audioBufferList
+            let buf0 = abl.pointee.mBuffers
+            guard let raw = buf0.mData else { return }
+            let p = raw.assumingMemoryBound(to: Int16.self)
+            handler(UnsafeBufferPointer(start: p, count: n))
         }
         tapInstalled = true
     }

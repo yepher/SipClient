@@ -3,95 +3,263 @@ import SwiftUI
 struct DialerView: View {
     @EnvironmentObject var appState: AppState
 
-    @AppStorage("dialer.sipHost") private var sipHost: String = ""
-    @AppStorage("dialer.sipPort") private var sipPort: String = "5060"
-    @AppStorage("dialer.toURI") private var toURI: String = ""
-    @AppStorage("dialer.fromUser") private var fromUser: String = "sip-client"
-    @AppStorage("dialer.fromDisplay") private var fromDisplay: String = "SIP Client"
-    @AppStorage("dialer.authUser") private var authUser: String = ""
-    @AppStorage("dialer.useSTUN") private var useSTUN: Bool = true
-    @AppStorage("dialer.stunServer") private var stunServer: String = ""
-    @AppStorage("dialer.callDuration") private var callDuration: Double = 30
-    @AppStorage("dialer.localSIPPort") private var localSIPPort: String = "5060"
-    @AppStorage("dialer.localRTPPort") private var localRTPPort: String = "10000"
+    /// Working copy of the selected profile. Edits don't persist until
+    /// "Save" is pressed.
+    @State private var draft: DialerProfile = DialerProfile(name: "New Profile")
+    @State private var hasUnsavedChanges: Bool = false
 
-    // Auth password is intentionally not persisted to AppStorage.
+    /// Auth password is intentionally only kept in memory.
     @State private var authPassword: String = ""
 
+    @State private var showSaveAsSheet: Bool = false
+    @State private var saveAsName: String = ""
+    @State private var showDeleteConfirm: Bool = false
+
     var body: some View {
-        Form {
-            Section("Target") {
-                TextField("SIP server host", text: $sipHost,
-                          prompt: Text("sip.example.com"))
-                TextField("SIP port", text: $sipPort)
-                TextField("To URI", text: $toURI,
-                          prompt: Text("sip:+15551234567@sip.example.com"))
+        VStack(spacing: 0) {
+            if appState.callInProgress {
+                InCallView()
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
             }
-
-            Section("Caller identity") {
-                TextField("From user", text: $fromUser)
-                TextField("From display name", text: $fromDisplay)
+            Form {
+                profileSection
+                targetSection
+                identitySection
+                authSection
+                natSection
+                localSection
+                placeCallSection
             }
-
-            Section("Auth (optional)") {
-                TextField("Auth username (defaults to From user)", text: $authUser)
-                SecureField("Auth password", text: $authPassword)
-            }
-
-            Section("NAT") {
-                Toggle("Use STUN", isOn: $useSTUN)
-                TextField("STUN server (blank = default)", text: $stunServer)
-                    .disabled(!useSTUN)
-            }
-
-            Section("Local") {
-                TextField("Local SIP port", text: $localSIPPort)
-                TextField("Local RTP port", text: $localRTPPort)
-                HStack {
-                    Text("Call duration after answer: \(Int(callDuration))s")
-                    Slider(value: $callDuration, in: 5...300, step: 5)
-                }
-            }
-
-            Section {
-                HStack {
-                    if appState.callInProgress {
-                        Button("Hang up", role: .destructive) {
-                            appState.hangup()
-                        }
-                    } else {
-                        Button("Place Call") {
-                            place()
-                        }
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(sipHost.isEmpty || toURI.isEmpty)
-                    }
-                    Spacer()
-                    Text(appState.callStatus)
-                        .foregroundStyle(.secondary)
-                        .monospaced()
-                        .lineLimit(2)
-                }
-            }
+            .formStyle(.grouped)
+            .padding()
         }
-        .formStyle(.grouped)
-        .padding()
         .navigationTitle("Dialer")
+        .onAppear { syncFromSelection() }
+        .onChange(of: appState.selectedProfileID) { _, _ in syncFromSelection() }
+        .sheet(isPresented: $showSaveAsSheet) {
+            saveAsSheet
+        }
+        .alert("Delete profile “\(draft.name)”?",
+               isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                appState.deleteProfile(id: draft.id)
+                syncFromSelection()
+            }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 
-    private func place() {
-        var cfg = SIPCallConfig(sipHost: sipHost.trimmingCharacters(in: .whitespaces))
-        cfg.sipPort = UInt16(sipPort) ?? 5060
-        cfg.toURI = toURI.trimmingCharacters(in: .whitespaces)
-        cfg.fromUser = fromUser
-        cfg.fromDisplay = fromDisplay
-        cfg.authUser = authUser
-        cfg.authPassword = authPassword
-        cfg.useSTUN = useSTUN
-        cfg.stunServer = stunServer
-        cfg.localSIPPort = UInt16(localSIPPort) ?? 5060
-        cfg.localRTPPort = UInt16(localRTPPort) ?? 10000
-        cfg.callDuration = callDuration
-        appState.placeCall(config: cfg)
+    // MARK: - Sections
+
+    @ViewBuilder
+    private var profileSection: some View {
+        Section("Profile") {
+            HStack {
+                Picker("", selection: Binding(
+                    get: { appState.selectedProfileID },
+                    set: { appState.selectProfile($0) }
+                )) {
+                    if appState.profiles.isEmpty {
+                        Text("No profiles").tag(UUID?.none)
+                    } else {
+                        ForEach(appState.profiles) { p in
+                            Text(p.name).tag(Optional(p.id))
+                        }
+                    }
+                }
+                .labelsHidden()
+                .frame(maxWidth: 320)
+
+                Spacer()
+
+                Button {
+                    saveAsName = draft.name + " copy"
+                    showSaveAsSheet = true
+                } label: {
+                    Label("New", systemImage: "plus")
+                }
+
+                Button {
+                    appState.upsertProfile(draft)
+                    hasUnsavedChanges = false
+                } label: {
+                    Label("Save", systemImage: "tray.and.arrow.down")
+                }
+                .disabled(!hasUnsavedChanges || appState.profiles.firstIndex(where: { $0.id == draft.id }) == nil)
+
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .disabled(appState.profile(id: appState.selectedProfileID) == nil)
+            }
+            .buttonStyle(.bordered)
+
+            TextField("Profile name", text: bind(\.name))
+        }
+    }
+
+    @ViewBuilder
+    private var targetSection: some View {
+        Section("Target") {
+            TextField("SIP server host", text: bind(\.sipHost),
+                      prompt: Text("sip.example.com"))
+            TextField("SIP port",
+                      text: portBind(\.sipPort, default: 5060))
+            TextField("To URI", text: bind(\.toURI),
+                      prompt: Text("sip:+15551234567@sip.example.com"))
+        }
+    }
+
+    @ViewBuilder
+    private var identitySection: some View {
+        Section("Caller identity") {
+            TextField("From user", text: bind(\.fromUser))
+            TextField("From display name", text: bind(\.fromDisplay))
+        }
+    }
+
+    @ViewBuilder
+    private var authSection: some View {
+        Section("Auth (optional, password not saved)") {
+            TextField("Auth username (defaults to From user)",
+                      text: bind(\.authUser))
+            SecureField("Auth password", text: $authPassword)
+        }
+    }
+
+    @ViewBuilder
+    private var natSection: some View {
+        Section("NAT") {
+            Toggle("Use STUN", isOn: bind(\.useSTUN))
+            TextField("STUN server (blank = default)",
+                      text: bind(\.stunServer))
+                .disabled(!draft.useSTUN)
+        }
+    }
+
+    @ViewBuilder
+    private var localSection: some View {
+        Section("Local") {
+            TextField("Local SIP port",
+                      text: portBind(\.localSIPPort, default: 5060))
+            TextField("Local RTP port",
+                      text: portBind(\.localRTPPort, default: 10000))
+            HStack {
+                Text("Call duration after answer: \(Int(draft.callDuration))s")
+                Slider(value: bind(\.callDuration), in: 5...300, step: 5)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var placeCallSection: some View {
+        Section {
+            HStack {
+                if appState.callInProgress {
+                    Button("Hang up", role: .destructive) {
+                        appState.hangup()
+                    }
+                } else {
+                    Button("Place Call") {
+                        let cfg = draft.callConfig(authPassword: authPassword)
+                        appState.placeCall(config: cfg)
+                    }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(draft.sipHost.isEmpty || draft.toURI.isEmpty)
+                }
+                Spacer()
+                if hasUnsavedChanges {
+                    Text("Unsaved changes")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+                Text(appState.callStatus)
+                    .foregroundStyle(.secondary)
+                    .monospaced()
+                    .lineLimit(2)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var saveAsSheet: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Save as new profile")
+                .font(.headline)
+            TextField("Profile name", text: $saveAsName)
+                .textFieldStyle(.roundedBorder)
+            HStack {
+                Spacer()
+                Button("Cancel") { showSaveAsSheet = false }
+                Button("Save") {
+                    var p = draft
+                    p = DialerProfile(
+                        id: UUID(),
+                        name: saveAsName.isEmpty ? "Untitled" : saveAsName,
+                        sipHost: p.sipHost, sipPort: p.sipPort, toURI: p.toURI,
+                        fromUser: p.fromUser, fromDisplay: p.fromDisplay,
+                        authUser: p.authUser,
+                        useSTUN: p.useSTUN, stunServer: p.stunServer,
+                        localSIPPort: p.localSIPPort, localRTPPort: p.localRTPPort,
+                        callDuration: p.callDuration
+                    )
+                    appState.upsertProfile(p)
+                    appState.selectProfile(p.id)
+                    showSaveAsSheet = false
+                    hasUnsavedChanges = false
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(20)
+        .frame(width: 360)
+    }
+
+    // MARK: - Helpers
+
+    private func syncFromSelection() {
+        if let p = appState.profile(id: appState.selectedProfileID) {
+            draft = p
+            hasUnsavedChanges = false
+        } else if let p = appState.profiles.first {
+            appState.selectProfile(p.id)
+            draft = p
+            hasUnsavedChanges = false
+        } else {
+            draft = DialerProfile(name: "New Profile")
+            hasUnsavedChanges = true
+        }
+    }
+
+    /// Generic binding into the draft profile that flips `hasUnsavedChanges`
+    /// when the value changes.
+    private func bind<V: Equatable>(_ keyPath: WritableKeyPath<DialerProfile, V>) -> Binding<V> {
+        Binding(
+            get: { draft[keyPath: keyPath] },
+            set: { newValue in
+                if draft[keyPath: keyPath] != newValue {
+                    draft[keyPath: keyPath] = newValue
+                    hasUnsavedChanges = true
+                }
+            }
+        )
+    }
+
+    /// Binding for UInt16 port fields with a fallback default if parsing fails.
+    private func portBind(_ keyPath: WritableKeyPath<DialerProfile, UInt16>,
+                          default fallback: UInt16) -> Binding<String> {
+        Binding(
+            get: { String(draft[keyPath: keyPath]) },
+            set: { s in
+                let v = UInt16(s) ?? fallback
+                if draft[keyPath: keyPath] != v {
+                    draft[keyPath: keyPath] = v
+                    hasUnsavedChanges = true
+                }
+            }
+        )
     }
 }

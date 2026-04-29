@@ -6,8 +6,14 @@ final class AppState: ObservableObject {
     @Published var wireLog: [WireLogEntry] = []
     @Published var callStatus: String = "Idle"
     @Published var callInProgress: Bool = false
+    @Published var callConnected: Bool = false
     @Published var audioClips: [AudioClip] = []
     @Published var scenarios: [Scenario] = []
+    @Published var profiles: [DialerProfile] = []
+    @Published var selectedProfileID: UUID?
+    @Published var selectedScenarioID: UUID?
+    @Published var runningScenarioID: UUID?
+    @Published var currentScenarioStep: Int?
     @Published var rtpStats: String = ""
 
     let audioEngine = AudioEngine()
@@ -16,12 +22,28 @@ final class AppState: ObservableObject {
     /// reads from here. Empty → silence is sent.
     let callMicBuffer = FrameBuffer(maxSeconds: 1.0)
 
+    /// The active call's RTP session, exposed so scenarios can send DTMF.
+    private var currentRTPSession: RTPSession?
+
     private var currentCall: SIPCall?
     private var currentTask: Task<Void, Never>?
     private var rtpStatsTask: Task<Void, Never>?
+    private var scenarioTask: Task<Void, Never>?
 
     init() {
         loadAudioLibrary()
+        loadProfiles()
+        loadScenarios()
+    }
+
+    // MARK: - App support directory
+
+    var appSupportDir: URL {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory,
+                                               in: .userDomainMask).first!
+        let dir = support.appendingPathComponent("SipClient", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
     }
 
     // MARK: - Wire log
@@ -88,7 +110,11 @@ final class AppState: ObservableObject {
 
     private func attachAudio(to rtp: RTPSession) {
         rtp.micBuffer = callMicBuffer
+        currentRTPSession = rtp
+        callConnected = true
         rtp.onPlaybackPCM = { samples in
+            // Update the recv level off the main thread; UI poll picks it up.
+            self.audioEngine.levelMeter.recordRecv(samples)
             Task { @MainActor in
                 self.audioEngine.enqueuePlayback(samples: samples)
             }
@@ -126,15 +152,243 @@ final class AppState: ObservableObject {
         audioEngine.stopCallMode()
         rtpStatsTask?.cancel()
         rtpStatsTask = nil
+        currentRTPSession = nil
+        callConnected = false
+    }
+
+    /// Send DTMF digits over the active call as RFC 4733 events.
+    func sendDTMF(_ digits: String) {
+        guard let rtp = currentRTPSession else {
+            appendLog(.init(direction: .sent, kind: .error,
+                            summary: "Cannot send DTMF: no active call"))
+            return
+        }
+        Task.detached {
+            await rtp.sendDTMFDigits(digits)
+        }
+        appendLog(.init(direction: .sent, kind: .info,
+                        summary: "DTMF: \(digits)"))
+    }
+
+    // MARK: - Profiles
+
+    private var profilesURL: URL {
+        appSupportDir.appendingPathComponent("profiles.json")
+    }
+
+    func loadProfiles() {
+        if let data = try? Data(contentsOf: profilesURL),
+           let list = try? JSONDecoder().decode([DialerProfile].self, from: data) {
+            profiles = list
+        }
+        // Migrate from old @AppStorage values on first launch.
+        if profiles.isEmpty {
+            let defaults = UserDefaults.standard
+            let host = defaults.string(forKey: "dialer.sipHost") ?? ""
+            let to = defaults.string(forKey: "dialer.toURI") ?? ""
+            if !host.isEmpty || !to.isEmpty {
+                var p = DialerProfile(name: "Default")
+                p.sipHost = host
+                p.toURI = to
+                if let s = defaults.string(forKey: "dialer.sipPort"),
+                   let v = UInt16(s) { p.sipPort = v }
+                p.fromUser = defaults.string(forKey: "dialer.fromUser") ?? p.fromUser
+                p.fromDisplay = defaults.string(forKey: "dialer.fromDisplay") ?? p.fromDisplay
+                p.authUser = defaults.string(forKey: "dialer.authUser") ?? ""
+                p.useSTUN = defaults.object(forKey: "dialer.useSTUN") as? Bool ?? true
+                p.stunServer = defaults.string(forKey: "dialer.stunServer") ?? ""
+                if let s = defaults.string(forKey: "dialer.localSIPPort"),
+                   let v = UInt16(s) { p.localSIPPort = v }
+                if let s = defaults.string(forKey: "dialer.localRTPPort"),
+                   let v = UInt16(s) { p.localRTPPort = v }
+                if let d = defaults.object(forKey: "dialer.callDuration") as? Double {
+                    p.callDuration = d
+                }
+                profiles = [p]
+                saveProfiles()
+            }
+        }
+        // Restore last selection
+        if let s = UserDefaults.standard.string(forKey: "dialer.selectedProfileID"),
+           let id = UUID(uuidString: s),
+           profiles.contains(where: { $0.id == id }) {
+            selectedProfileID = id
+        } else {
+            selectedProfileID = profiles.first?.id
+        }
+    }
+
+    func saveProfiles() {
+        if let data = try? JSONEncoder().encode(profiles) {
+            try? data.write(to: profilesURL, options: .atomic)
+        }
+    }
+
+    func selectProfile(_ id: UUID?) {
+        selectedProfileID = id
+        if let id { UserDefaults.standard.set(id.uuidString, forKey: "dialer.selectedProfileID") }
+    }
+
+    /// Insert if new, replace if existing. Saves immediately.
+    func upsertProfile(_ profile: DialerProfile) {
+        if let idx = profiles.firstIndex(where: { $0.id == profile.id }) {
+            profiles[idx] = profile
+        } else {
+            profiles.append(profile)
+        }
+        saveProfiles()
+    }
+
+    func deleteProfile(id: UUID) {
+        profiles.removeAll { $0.id == id }
+        if selectedProfileID == id {
+            selectedProfileID = profiles.first?.id
+        }
+        saveProfiles()
+    }
+
+    func profile(id: UUID?) -> DialerProfile? {
+        guard let id else { return nil }
+        return profiles.first(where: { $0.id == id })
+    }
+
+    // MARK: - Scenarios
+
+    private var scenariosURL: URL {
+        appSupportDir.appendingPathComponent("scenarios.json")
+    }
+
+    func loadScenarios() {
+        if let data = try? Data(contentsOf: scenariosURL),
+           let list = try? JSONDecoder().decode([Scenario].self, from: data) {
+            scenarios = list
+        }
+        if let s = UserDefaults.standard.string(forKey: "scenarios.selectedID"),
+           let id = UUID(uuidString: s),
+           scenarios.contains(where: { $0.id == id }) {
+            selectedScenarioID = id
+        } else {
+            selectedScenarioID = scenarios.first?.id
+        }
+    }
+
+    func saveScenarios() {
+        if let data = try? JSONEncoder().encode(scenarios) {
+            try? data.write(to: scenariosURL, options: .atomic)
+        }
+    }
+
+    func selectScenario(_ id: UUID?) {
+        selectedScenarioID = id
+        if let id { UserDefaults.standard.set(id.uuidString, forKey: "scenarios.selectedID") }
+    }
+
+    func upsertScenario(_ scenario: Scenario) {
+        if let idx = scenarios.firstIndex(where: { $0.id == scenario.id }) {
+            scenarios[idx] = scenario
+        } else {
+            scenarios.append(scenario)
+        }
+        saveScenarios()
+    }
+
+    func deleteScenario(id: UUID) {
+        scenarios.removeAll { $0.id == id }
+        if selectedScenarioID == id {
+            selectedScenarioID = scenarios.first?.id
+        }
+        saveScenarios()
+    }
+
+    func scenario(id: UUID?) -> Scenario? {
+        guard let id else { return nil }
+        return scenarios.first(where: { $0.id == id })
+    }
+
+    /// Run the scenario. If it has a profile, places that call first and
+    /// runs steps after answer; otherwise runs against the active call.
+    func runScenario(_ scenario: Scenario, authPassword: String = "") {
+        guard runningScenarioID == nil else { return }
+        runningScenarioID = scenario.id
+        currentScenarioStep = nil
+        appendLog(.init(direction: .sent, kind: .info,
+                        summary: "Running scenario: \(scenario.name)"))
+
+        scenarioTask = Task { [scenario] in
+            defer {
+                Task { @MainActor in
+                    self.runningScenarioID = nil
+                    self.currentScenarioStep = nil
+                    self.appendLog(.init(direction: .sent, kind: .info,
+                                         summary: "Scenario finished: \(scenario.name)"))
+                }
+            }
+
+            // Place call from profile if specified.
+            if let profileID = scenario.profileID,
+               let profile = self.profile(id: profileID),
+               !self.callInProgress {
+                let cfg = profile.callConfig(authPassword: authPassword)
+                self.placeCall(config: cfg)
+            }
+
+            for (idx, step) in scenario.steps.enumerated() {
+                if Task.isCancelled { return }
+                self.currentScenarioStep = idx
+                await self.executeStep(step)
+            }
+        }
+    }
+
+    func cancelScenario() {
+        scenarioTask?.cancel()
+        scenarioTask = nil
+        runningScenarioID = nil
+        currentScenarioStep = nil
+    }
+
+    private func executeStep(_ step: ScenarioStep) async {
+        switch step {
+        case .waitForAnswer(let timeout):
+            let deadline = Date().addingTimeInterval(timeout)
+            while Date() < deadline {
+                if Task.isCancelled { return }
+                if callConnected { return }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            appendLog(.init(direction: .sent, kind: .error,
+                            summary: "waitForAnswer timed out after \(Int(timeout))s"))
+        case .wait(let seconds):
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+        case .playClip(let clipID):
+            if let clip = audioClips.first(where: { $0.id == clipID }) {
+                playClipIntoCall(clip)
+                // Wait for the clip to finish so subsequent steps run after it.
+                let nanos = UInt64(clip.durationSeconds * 1_000_000_000)
+                try? await Task.sleep(nanoseconds: nanos)
+            } else {
+                appendLog(.init(direction: .sent, kind: .error,
+                                summary: "Clip not found in scenario"))
+            }
+        case .sendDTMF(let digits):
+            guard let rtp = currentRTPSession else {
+                appendLog(.init(direction: .sent, kind: .error,
+                                summary: "Cannot send DTMF: no active call"))
+                return
+            }
+            await rtp.sendDTMFDigits(digits)
+            appendLog(.init(direction: .sent, kind: .info,
+                            summary: "DTMF: \(digits)"))
+        case .hangup:
+            hangup()
+        }
     }
 
     // MARK: - Audio Library
 
     /// Where audio clips are persisted on disk.
     var clipsDirectory: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory,
-                                               in: .userDomainMask).first!
-        let dir = support.appendingPathComponent("SipClient/Clips", isDirectory: true)
+        let dir = appSupportDir.appendingPathComponent("Clips", isDirectory: true)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir
     }
@@ -197,6 +451,12 @@ final class AppState: ObservableObject {
     func deleteClip(_ clip: AudioClip) {
         try? FileManager.default.removeItem(at: clip.fileURL)
         audioClips.removeAll { $0.id == clip.id }
+        saveAudioLibrary()
+    }
+
+    func renameClip(_ clip: AudioClip, to newName: String) {
+        guard let idx = audioClips.firstIndex(where: { $0.id == clip.id }) else { return }
+        audioClips[idx].name = newName
         saveAudioLibrary()
     }
 

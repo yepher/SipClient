@@ -52,6 +52,7 @@ final class SIPCall: @unchecked Sendable {
     private(set) var remoteRTPHost: String = ""
     private(set) var remoteRTPPort: UInt16 = 0
     private(set) var negotiatedPT: UInt8 = 0
+    private(set) var negotiatedDTMFPT: UInt8?
 
     private(set) var answered = false
     private(set) var hungup = false
@@ -187,6 +188,7 @@ final class SIPCall: @unchecked Sendable {
                 remoteRTPHost = ans.remoteHost
                 remoteRTPPort = ans.remotePort
                 negotiatedPT = ans.audioPT
+                negotiatedDTMFPT = ans.dtmfPT
 
                 let ack = buildACK(toTag: toTag)
                 recordSent(method: "ACK", raw: ack)
@@ -221,6 +223,7 @@ final class SIPCall: @unchecked Sendable {
                                     remoteHost: remoteRTPHost,
                                     remotePort: remoteRTPPort,
                                     payloadType: negotiatedPT)
+        rtpSession.dtmfPT = negotiatedDTMFPT
         onMediaReady?(rtpSession)
         rtpSession.startSending()
         rtpSession.startReceiving()
