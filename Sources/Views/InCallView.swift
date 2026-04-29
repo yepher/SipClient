@@ -1,3 +1,4 @@
+import CoreAudio
 import SwiftUI
 
 struct InCallView: View {
@@ -26,6 +27,8 @@ struct InCallView: View {
                 .buttonStyle(.borderedProminent)
                 .keyboardShortcut(.escape)
             }
+
+            audioDeviceRow
 
             HStack(alignment: .bottom, spacing: 12) {
                 VUMeter(level: appState.audioEngine.sendLevel,
@@ -63,6 +66,45 @@ struct InCallView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private var audioDeviceRow: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "mic")
+                .foregroundStyle(.secondary)
+            Picker("", selection: Binding<AudioDeviceID>(
+                get: { appState.selectedInputDeviceID },
+                set: { appState.setInputDevice($0) }
+            )) {
+                ForEach(appState.inputDevices) { d in
+                    Text(d.name).tag(d.id)
+                }
+            }
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+
+            Image(systemName: "speaker.wave.2")
+                .foregroundStyle(.secondary)
+            Picker("", selection: Binding<AudioDeviceID>(
+                get: { appState.selectedOutputDeviceID },
+                set: { appState.setOutputDevice($0) }
+            )) {
+                ForEach(appState.outputDevices) { d in
+                    Text(d.name).tag(d.id)
+                }
+            }
+            .labelsHidden()
+            .frame(maxWidth: .infinity)
+
+            Button {
+                appState.refreshAudioDevices()
+            } label: {
+                Image(systemName: "arrow.clockwise")
+            }
+            .buttonStyle(.borderless)
+            .help("Refresh device list")
+        }
     }
 }
 

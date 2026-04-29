@@ -1,3 +1,5 @@
+import Combine
+import CoreAudio
 import Foundation
 import SwiftUI
 
@@ -16,6 +18,9 @@ final class AppState: ObservableObject {
     @Published var currentScenarioStep: Int?
     @Published var rtpStats: String = ""
 
+    @Published var inputDevices: [AudioDevice] = []
+    @Published var outputDevices: [AudioDevice] = []
+
     let audioEngine = AudioEngine()
 
     /// Shared mic→RTP buffer. The mic tap writes here, the RTP send loop
@@ -30,10 +35,28 @@ final class AppState: ObservableObject {
     private var rtpStatsTask: Task<Void, Never>?
     private var scenarioTask: Task<Void, Never>?
 
+    /// Forward audioEngine's @Published changes (level meters, mode) into
+    /// AppState's own publisher so any view bound to `appState` sees them.
+    private var engineSubscription: AnyCancellable?
+
     init() {
         loadAudioLibrary()
         loadProfiles()
         loadScenarios()
+        refreshAudioDevices()
+
+        // Republish audioEngine changes so views observing appState pick up
+        // VU meter updates and mode transitions.
+        engineSubscription = audioEngine.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        // Surface audio engine diagnostics in the wire log.
+        audioEngine.onDiagnostic = { [weak self] msg in
+            Task { @MainActor in
+                self?.appendLog(.init(direction: .sent, kind: .info,
+                                      summary: "audio: \(msg)"))
+            }
+        }
     }
 
     // MARK: - App support directory
@@ -112,20 +135,18 @@ final class AppState: ObservableObject {
         rtp.micBuffer = callMicBuffer
         currentRTPSession = rtp
         callConnected = true
-        rtp.onPlaybackPCM = { samples in
-            // Update the recv level off the main thread; UI poll picks it up.
-            self.audioEngine.levelMeter.recordRecv(samples)
-            Task { @MainActor in
-                self.audioEngine.enqueuePlayback(samples: samples)
-            }
-        }
 
         Task { @MainActor in
+            // Start the engine with the mic tap installed BEFORE we let
+            // RTP samples reach the playback path. If we let the player
+            // start first (in output-only mode) and then try to add the
+            // mic tap, CoreAudio rebuilds the graph and the receive path
+            // goes silent — the exact bug previously seen at the moment
+            // mic permission was granted.
             let ok = await AudioEngine.requestMicAuthorization()
-            guard ok else {
+            if !ok {
                 self.appendLog(.init(direction: .sent, kind: .error,
-                                     summary: "Microphone access denied"))
-                return
+                                     summary: "Microphone access denied — sending silence"))
             }
             do {
                 try self.audioEngine.startCallMode(micBuffer: self.callMicBuffer)
@@ -135,9 +156,18 @@ final class AppState: ObservableObject {
                 self.appendLog(.init(direction: .sent, kind: .error,
                                      summary: "Mic start failed: \(error.localizedDescription)"))
             }
+
+            // Now wire up RTP receive → playback. By the time the first
+            // RTP packet hits this callback, the engine is already
+            // running with both input and output configured.
+            rtp.onPlaybackPCM = { samples in
+                self.audioEngine.levelMeter.recordRecv(samples)
+                Task { @MainActor in
+                    self.audioEngine.enqueuePlayback(samples: samples)
+                }
+            }
         }
 
-        // Periodic RTP stats publishing
         rtpStatsTask = Task.detached { [weak rtp] in
             while !Task.isCancelled, let r = rtp {
                 let s = "RTP sent=\(r.packetsSent) recv=\(r.packetsReceived)"
@@ -154,6 +184,27 @@ final class AppState: ObservableObject {
         rtpStatsTask = nil
         currentRTPSession = nil
         callConnected = false
+    }
+
+    // MARK: - Audio devices
+
+    func refreshAudioDevices() {
+        inputDevices = AudioDevices.list(input: true)
+        outputDevices = AudioDevices.list(input: false)
+    }
+
+    var selectedInputDeviceID: AudioDeviceID {
+        audioEngine.currentInputDeviceID
+    }
+    var selectedOutputDeviceID: AudioDeviceID {
+        audioEngine.currentOutputDeviceID
+    }
+
+    func setInputDevice(_ id: AudioDeviceID) {
+        audioEngine.setInputDevice(id)
+    }
+    func setOutputDevice(_ id: AudioDeviceID) {
+        audioEngine.setOutputDevice(id)
     }
 
     /// Send DTMF digits over the active call as RFC 4733 events.
