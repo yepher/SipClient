@@ -132,6 +132,8 @@ struct DialerView: View {
             if draft.transportKind == .tls {
                 Toggle("Allow self-signed TLS certificate", isOn: bind(\.allowSelfSignedTLS))
             }
+            Toggle("Use SRTP (SDES, AES_CM_128_HMAC_SHA1_80)",
+                   isOn: bind(\.useSRTP))
             TextField("SIP server host", text: bind(\.sipHost),
                       prompt: Text("sip.example.com"))
             TextField("SIP port",
@@ -193,9 +195,6 @@ struct DialerView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            Divider()
-            Toggle("Use SRTP (SDES, AES_CM_128_HMAC_SHA1_80)",
-                   isOn: bind(\.useSRTP))
         }
     }
 
