@@ -1,0 +1,420 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
+		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
+		3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */; };
+		41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3935F70332C886A6EE9DE5B9 /* ContentView.swift */; };
+		505309C2041E2E6C17347638 /* Scenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8A56B48A1B633CCCD04662 /* Scenario.swift */; };
+		54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F985791C1644D7A2C7699027 /* SIPCall.swift */; };
+		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
+		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
+		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
+		B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C5DA24C5E19148C27D46D /* WireLogEntry.swift */; };
+		B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091382AF4736A88FFCA6EB39 /* SDP.swift */; };
+		B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */; };
+		C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F7D22A8A46A1E2C92618A0 /* STUN.swift */; };
+		D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7085A2F81C837A2152219F /* AudioLibraryView.swift */; };
+		D49A264EF78E3B699591B6EF /* G711.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4920A5B0B76F41B91A524FBD /* G711.swift */; };
+		E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3FD7D41D5B05E05D014C3E /* DialerView.swift */; };
+		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
+		F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766643A131738D6EF1467CA3 /* SipClientApp.swift */; };
+		FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6F1B5011F182DC913B3203 /* AppState.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		091382AF4736A88FFCA6EB39 /* SDP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDP.swift; sourceTree = "<group>"; };
+		0C3FD7D41D5B05E05D014C3E /* DialerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerView.swift; sourceTree = "<group>"; };
+		23416B83463537AA96BCE1DF /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
+		271F8A36FC146836643F90C1 /* SIPMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPMessage.swift; sourceTree = "<group>"; };
+		3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCallConfig.swift; sourceTree = "<group>"; };
+		3935F70332C886A6EE9DE5B9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		4920A5B0B76F41B91A524FBD /* G711.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G711.swift; sourceTree = "<group>"; };
+		616C5DA24C5E19148C27D46D /* WireLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogEntry.swift; sourceTree = "<group>"; };
+		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
+		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
+		867E2734C4684D7FA23C7484 /* SipClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SipClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		93CBEEEE944B5F904E5DC7DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
+		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
+		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
+		CC8A56B48A1B633CCCD04662 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
+		D3F7D22A8A46A1E2C92618A0 /* STUN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STUN.swift; sourceTree = "<group>"; };
+		EE6F1B5011F182DC913B3203 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SipClient.entitlements; sourceTree = "<group>"; };
+		F985791C1644D7A2C7699027 /* SIPCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCall.swift; sourceTree = "<group>"; };
+		F9CEBEB471B82F2FA682B890 /* AudioClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClip.swift; sourceTree = "<group>"; };
+		FC7085A2F81C837A2152219F /* AudioLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLibraryView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		3F5ABD20F32FBB19BFC04C2C /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FC7085A2F81C837A2152219F /* AudioLibraryView.swift */,
+				0C3FD7D41D5B05E05D014C3E /* DialerView.swift */,
+				AA55B20DDD93EA0D027570E3 /* InboundView.swift */,
+				81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */,
+				BAB6086A05371C95986571AC /* WireLogView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		44186F1767AF19E7827440F3 /* RTP */ = {
+			isa = PBXGroup;
+			children = (
+				4920A5B0B76F41B91A524FBD /* G711.swift */,
+				AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */,
+			);
+			path = RTP;
+			sourceTree = "<group>";
+		};
+		4A8DFFE76B3FE37EDFEF13AC /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				F9CEBEB471B82F2FA682B890 /* AudioClip.swift */,
+				CC8A56B48A1B633CCCD04662 /* Scenario.swift */,
+				616C5DA24C5E19148C27D46D /* WireLogEntry.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		51512535A3376DF92DAAE31F /* Net */ = {
+			isa = PBXGroup;
+			children = (
+				23416B83463537AA96BCE1DF /* UDPSocket.swift */,
+			);
+			path = Net;
+			sourceTree = "<group>";
+		};
+		791AFF7231B4EFE19C5C4129 = {
+			isa = PBXGroup;
+			children = (
+				9DA030596C81C06ECF2D181F /* Sources */,
+				C8A19FCD91EC6151B540FD3B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9DA030596C81C06ECF2D181F /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				EE6F1B5011F182DC913B3203 /* AppState.swift */,
+				3935F70332C886A6EE9DE5B9 /* ContentView.swift */,
+				93CBEEEE944B5F904E5DC7DB /* Info.plist */,
+				F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */,
+				766643A131738D6EF1467CA3 /* SipClientApp.swift */,
+				4A8DFFE76B3FE37EDFEF13AC /* Models */,
+				51512535A3376DF92DAAE31F /* Net */,
+				44186F1767AF19E7827440F3 /* RTP */,
+				DB3D942CA7CC8F1E008FEAF8 /* SIP */,
+				E1E7700C18C0FFBFFC92A9FC /* STUN */,
+				3F5ABD20F32FBB19BFC04C2C /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		C8A19FCD91EC6151B540FD3B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				867E2734C4684D7FA23C7484 /* SipClient.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DB3D942CA7CC8F1E008FEAF8 /* SIP */ = {
+			isa = PBXGroup;
+			children = (
+				091382AF4736A88FFCA6EB39 /* SDP.swift */,
+				F985791C1644D7A2C7699027 /* SIPCall.swift */,
+				3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */,
+				271F8A36FC146836643F90C1 /* SIPMessage.swift */,
+			);
+			path = SIP;
+			sourceTree = "<group>";
+		};
+		E1E7700C18C0FFBFFC92A9FC /* STUN */ = {
+			isa = PBXGroup;
+			children = (
+				D3F7D22A8A46A1E2C92618A0 /* STUN.swift */,
+			);
+			path = STUN;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		20F0D72C3427DF836E1E4118 /* SipClient */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E46131540ECBEF775393F527 /* Build configuration list for PBXNativeTarget "SipClient" */;
+			buildPhases = (
+				4F65B654303D162EB2340E1B /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SipClient;
+			packageProductDependencies = (
+			);
+			productName = SipClient;
+			productReference = 867E2734C4684D7FA23C7484 /* SipClient.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0580484F759D96097D0A6869 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					20F0D72C3427DF836E1E4118 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = BBBA0D6C3D0C62ED4714F195 /* Build configuration list for PBXProject "SipClient" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 791AFF7231B4EFE19C5C4129;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C8A19FCD91EC6151B540FD3B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				20F0D72C3427DF836E1E4118 /* SipClient */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4F65B654303D162EB2340E1B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */,
+				1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */,
+				D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */,
+				41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */,
+				E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */,
+				D49A264EF78E3B699591B6EF /* G711.swift in Sources */,
+				9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */,
+				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
+				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,
+				54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */,
+				B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */,
+				AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */,
+				C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */,
+				505309C2041E2E6C17347638 /* Scenario.swift in Sources */,
+				96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */,
+				F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */,
+				F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */,
+				B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */,
+				3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1242BE2E4F467B08E91D1B23 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		2152134458926773732CE301 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = minimal;
+				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		B1D2DC0FCEB8DD3E99FD2AD4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/SipClient.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.livekit.sipclient;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		FD094480F011EC5BC09F19C1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/SipClient.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = io.livekit.sipclient;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		BBBA0D6C3D0C62ED4714F195 /* Build configuration list for PBXProject "SipClient" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1242BE2E4F467B08E91D1B23 /* Debug */,
+				2152134458926773732CE301 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E46131540ECBEF775393F527 /* Build configuration list for PBXNativeTarget "SipClient" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD094480F011EC5BC09F19C1 /* Debug */,
+				B1D2DC0FCEB8DD3E99FD2AD4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0580484F759D96097D0A6869 /* Project object */;
+}

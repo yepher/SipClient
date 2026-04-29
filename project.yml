@@ -1,0 +1,53 @@
+name: SipClient
+options:
+  bundleIdPrefix: io.livekit.sipclient
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+    CODE_SIGN_IDENTITY: "-"
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_STRICT_CONCURRENCY: minimal
+targets:
+  SipClient:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources
+    resources:
+      - path: Resources
+        optional: true
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleName: SipClient
+        CFBundleDisplayName: SIP Client
+        CFBundleIdentifier: io.livekit.sipclient
+        CFBundleShortVersionString: "0.1.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "14.0"
+        NSHighResolutionCapable: true
+        NSMicrophoneUsageDescription: "SIP Client needs microphone access to send audio during SIP calls."
+        NSLocalNetworkUsageDescription: "SIP Client communicates with SIP servers and STUN servers on your local network."
+        NSBonjourServices:
+          - _sip._udp
+    entitlements:
+      path: Sources/SipClient.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
+        com.apple.security.device.audio-input: true
+        com.apple.security.network.client: true
+        com.apple.security.network.server: true
+        com.apple.security.files.user-selected.read-write: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.livekit.sipclient
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Sources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Sources/SipClient.entitlements
