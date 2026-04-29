@@ -28,6 +28,13 @@ final class SIPCall: @unchecked Sendable {
     var onWireLog: (@Sendable (WireLogEntry) -> Void)?
     var onStatus: (@Sendable (String) -> Void)?
 
+    /// Fires once the call is answered and the RTP session is created.
+    /// AppState uses this to wire mic capture and speaker playback.
+    var onMediaReady: (@Sendable (RTPSession) -> Void)?
+
+    /// Fires as the call ends — gives AppState a chance to tear down audio.
+    var onMediaEnd: (@Sendable () -> Void)?
+
     let callID = SIPTokens.callID()
     let fromTag = SIPTokens.tag()
     private(set) var toTag: String = ""
@@ -208,13 +215,19 @@ final class SIPCall: @unchecked Sendable {
             throw SIPCallError.notAnswered(seconds: Int(cfg.answerTimeout))
         }
 
-        // Media phase: keepalive + listen for in-dialog BYE
+        // Media phase: kick off RTP send/recv and notify the AppState so it
+        // can wire up mic capture and speaker playback.
         let rtpSession = RTPSession(socket: rtp,
                                     remoteHost: remoteRTPHost,
                                     remotePort: remoteRTPPort,
                                     payloadType: negotiatedPT)
-        rtpSession.startSilenceKeepalive()
-        defer { rtpSession.stop() }
+        onMediaReady?(rtpSession)
+        rtpSession.startSending()
+        rtpSession.startReceiving()
+        defer {
+            rtpSession.stop()
+            onMediaEnd?()
+        }
 
         let callEnd = Date().addingTimeInterval(cfg.callDuration)
         while !hungup && Date() < callEnd && !hangupRequested {

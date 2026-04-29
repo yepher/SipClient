@@ -9,10 +9,12 @@
 /* Begin PBXBuildFile section */
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
 		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
+		3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */; };
 		3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */; };
 		41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3935F70332C886A6EE9DE5B9 /* ContentView.swift */; };
 		505309C2041E2E6C17347638 /* Scenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8A56B48A1B633CCCD04662 /* Scenario.swift */; };
 		54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F985791C1644D7A2C7699027 /* SIPCall.swift */; };
+		831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B361FCC5C7F35618659A5B /* AudioEngine.swift */; };
 		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
@@ -25,7 +27,9 @@
 		E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3FD7D41D5B05E05D014C3E /* DialerView.swift */; };
 		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
 		F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766643A131738D6EF1467CA3 /* SipClientApp.swift */; };
+		FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */; };
 		FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6F1B5011F182DC913B3203 /* AppState.swift */; };
+		FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309E10E277E500AF96790CD4 /* WAVFile.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +37,7 @@
 		0C3FD7D41D5B05E05D014C3E /* DialerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerView.swift; sourceTree = "<group>"; };
 		23416B83463537AA96BCE1DF /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
 		271F8A36FC146836643F90C1 /* SIPMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPMessage.swift; sourceTree = "<group>"; };
+		309E10E277E500AF96790CD4 /* WAVFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WAVFile.swift; sourceTree = "<group>"; };
 		3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCallConfig.swift; sourceTree = "<group>"; };
 		3935F70332C886A6EE9DE5B9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		4920A5B0B76F41B91A524FBD /* G711.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G711.swift; sourceTree = "<group>"; };
@@ -40,10 +45,13 @@
 		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
 		867E2734C4684D7FA23C7484 /* SipClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SipClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBuffer.swift; sourceTree = "<group>"; };
 		93CBEEEE944B5F904E5DC7DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
 		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
+		BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedSampleBuffer.swift; sourceTree = "<group>"; };
+		C3B361FCC5C7F35618659A5B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		CC8A56B48A1B633CCCD04662 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
 		D3F7D22A8A46A1E2C92618A0 /* STUN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STUN.swift; sourceTree = "<group>"; };
 		EE6F1B5011F182DC913B3203 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
@@ -93,6 +101,17 @@
 			path = Net;
 			sourceTree = "<group>";
 		};
+		68D83C1C62A101EF2EBA890F /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				C3B361FCC5C7F35618659A5B /* AudioEngine.swift */,
+				8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */,
+				BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */,
+				309E10E277E500AF96790CD4 /* WAVFile.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
 		791AFF7231B4EFE19C5C4129 = {
 			isa = PBXGroup;
 			children = (
@@ -109,6 +128,7 @@
 				93CBEEEE944B5F904E5DC7DB /* Info.plist */,
 				F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */,
 				766643A131738D6EF1467CA3 /* SipClientApp.swift */,
+				68D83C1C62A101EF2EBA890F /* Audio */,
 				4A8DFFE76B3FE37EDFEF13AC /* Models */,
 				51512535A3376DF92DAAE31F /* Net */,
 				44186F1767AF19E7827440F3 /* RTP */,
@@ -207,11 +227,14 @@
 			files = (
 				FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */,
 				1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */,
+				831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */,
 				D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */,
 				41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */,
 				E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */,
+				FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */,
 				D49A264EF78E3B699591B6EF /* G711.swift in Sources */,
 				9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */,
+				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
 				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,
 				54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */,
@@ -222,6 +245,7 @@
 				96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */,
 				F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */,
 				F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */,
+				FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */,
 				B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */,
 				3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */,
 			);
