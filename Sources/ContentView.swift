@@ -25,9 +25,8 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            List(SidebarTab.allCases, selection: $selection) { tab in
+            List(SidebarTab.allCases, id: \.self, selection: $selection) { tab in
                 Label(tab.rawValue, systemImage: tab.systemImage)
-                    .tag(tab as SidebarTab?)
             }
             .navigationTitle("SIP Client")
             .frame(minWidth: 180)

@@ -31,13 +31,17 @@ final class AudioEngine: ObservableObject {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private let playFormat: AVAudioFormat
-    private var tapInstalled = false
-    private var firstFrameLogged = false
-    private var firstNonSilentLogged = false
+    /// Mic capture is done via AVCaptureSession instead of AVAudioEngine's
+    /// input node — the latter is unreliable on macOS (delivers a single
+    /// buffer and stalls; VPIO fails to construct an aggregate device on
+    /// some Macs). AVAudioEngine is now used only for playback.
+    private let micCapture = MicCapture()
 
     private let recordBuffer = LockedSampleBuffer()
     private var levelTimer: AnyCancellable?
     private var heartbeatTimer: AnyCancellable?
+    /// Held weakly enough for a same-call restart after a device change.
+    private weak var lastCallMicBuffer: FrameBuffer?
 
     /// User-selected device IDs (kAudioObjectUnknown = use system default).
     private var preferredInputDeviceID: AudioDeviceID = kAudioObjectUnknown
@@ -77,18 +81,15 @@ final class AudioEngine: ObservableObject {
         return AudioDevices.systemDefault(input: false) ?? kAudioObjectUnknown
     }
 
-    /// Set the input device. Audio units only accept a CurrentDevice
-    /// change when stopped, so we cleanly stop the engine, swap, and
-    /// resume if it was running.
+    /// Set the input device. Mic capture is now via AVCaptureSession;
+    /// device routing happens at session-configuration time. For now
+    /// we only support the system default; explicit device routing for
+    /// AVCaptureSession can be added later by mapping AudioDeviceID to
+    /// AVCaptureDevice.uniqueID. Stored so the dropdown reflects the user's
+    /// choice for the output side.
     func setInputDevice(_ id: AudioDeviceID) {
         preferredInputDeviceID = id
-        let wasRunning = engine.isRunning
-        if wasRunning { engine.stop() }
         applyInputDevice()
-        if wasRunning {
-            do { try engine.start(); player.play() }
-            catch { onDiagnostic?("Restart failed: \(error.localizedDescription)") }
-        }
         onDiagnostic?("Selected input device id=\(id)")
         objectWillChange.send()
     }
@@ -106,25 +107,10 @@ final class AudioEngine: ObservableObject {
         objectWillChange.send()
     }
 
-    /// Only push our preferred device into the engine if the user has
-    /// explicitly chosen one. Calling AudioUnitSetProperty unconditionally
-    /// (even with the system default) destabilises the HAL unit state.
-    private func applyInputDevice() {
-        guard preferredInputDeviceID != kAudioObjectUnknown,
-              let au = engine.inputNode.audioUnit else { return }
-        var deviceID = preferredInputDeviceID
-        let status = AudioUnitSetProperty(
-            au,
-            kAudioOutputUnitProperty_CurrentDevice,
-            kAudioUnitScope_Global,
-            0,
-            &deviceID,
-            UInt32(MemoryLayout<AudioDeviceID>.size)
-        )
-        if status != noErr {
-            onDiagnostic?("Failed to set input device (OSStatus \(status))")
-        }
-    }
+    /// Input device routing is handled by AVCaptureSession picking the
+    /// system default. This is a placeholder for when we map AudioDeviceID
+    /// to AVCaptureDevice.uniqueID. Currently no-op.
+    private func applyInputDevice() { }
 
     private func applyOutputDevice() {
         guard preferredOutputDeviceID != kAudioObjectUnknown,
@@ -154,9 +140,6 @@ final class AudioEngine: ObservableObject {
 
     private func ensureRunning() throws {
         if !engine.isRunning {
-            // Apply user-selected devices before starting (audio units only
-            // accept a device change while stopped).
-            applyInputDevice()
             applyOutputDevice()
             do {
                 try engine.start()
@@ -175,21 +158,29 @@ final class AudioEngine: ObservableObject {
 
     func startCallMode(micBuffer: FrameBuffer) throws {
         guard mode == .idle else { return }
-        firstFrameLogged = false
-        firstNonSilentLogged = false
+        lastCallMicBuffer = micBuffer
         micFrameCount.reset()
         micPeakTracker.reset()
         let levels = levelMeter
         let counter = micFrameCount
         let peaks = micPeakTracker
 
-        // Log the TCC permission status — useful sanity check.
         let auth = AVCaptureDevice.authorizationStatus(for: .audio)
         onDiagnostic?("Mic auth status: \(auth.rawValue) (3 = authorized)")
+        guard auth == .authorized else {
+            throw NSError(domain: "AudioEngine", code: 100, userInfo: [
+                NSLocalizedDescriptionKey:
+                    "Microphone permission not granted. Open System Settings → Privacy & Security → Microphone and enable SIP Client."
+            ])
+        }
 
-        // Install the tap BEFORE the engine ever starts so input + output
-        // are wired together from the first run.
-        try installMicTap { samples in
+        // Start playback engine so RTP receive can flow.
+        try ensureRunning()
+
+        // Wire MicCapture diagnostics to the wire log and start capturing.
+        let onDiag = onDiagnostic
+        micCapture.onDiagnostic = { msg in onDiag?(msg) }
+        micCapture.onSamples = { samples in
             levels.recordSend(samples)
             counter.increment()
             var peak: Int32 = 0
@@ -201,13 +192,16 @@ final class AudioEngine: ObservableObject {
             peaks.update(peak)
             micBuffer.write(Array(samples))
         }
-        engine.prepare()
-        try ensureRunning()
+        do {
+            try micCapture.start()
+        } catch {
+            onDiagnostic?("MicCapture start failed: \(error.localizedDescription)")
+            throw error
+        }
 
         // Heartbeat: every 1.5 seconds while in call mode, log how many
-        // mic frames have arrived and the recent peak. Tells us very
-        // quickly whether the tap is firing and whether samples are
-        // non-zero.
+        // mic frames have arrived and the recent peak. Tells us quickly
+        // whether capture is firing and whether samples are non-zero.
         heartbeatTimer = Timer.publish(every: 1.5, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
@@ -223,7 +217,8 @@ final class AudioEngine: ObservableObject {
 
     func stopCallMode() {
         guard mode == .call else { return }
-        removeMicTap()
+        micCapture.stop()
+        micCapture.onSamples = nil
         mode = .idle
         levelMeter.reset()
         stopLevelTimer()
@@ -239,18 +234,22 @@ final class AudioEngine: ObservableObject {
         recordBuffer.clear()
         let buf = recordBuffer
         let levels = levelMeter
-        try installMicTap { samples in
+
+        let onDiag = onDiagnostic
+        micCapture.onDiagnostic = { msg in onDiag?(msg) }
+        micCapture.onSamples = { samples in
             levels.recordSend(samples)
             buf.append(samples)
         }
-        try ensureRunning()
+        try micCapture.start()
         mode = .record
         startLevelTimer()
     }
 
     func stopRecordMode() -> [Int16] {
         guard mode == .record else { return [] }
-        removeMicTap()
+        micCapture.stop()
+        micCapture.onSamples = nil
         mode = .idle
         stopLevelTimer()
         sendLevel = 0
@@ -294,126 +293,6 @@ final class AudioEngine: ObservableObject {
         levelTimer = nil
     }
 
-    // MARK: - Internal: mic tap
-
-    private func installMicTap(_ handler: @escaping @Sendable (UnsafeBufferPointer<Int16>) -> Void) throws {
-        precondition(!tapInstalled)
-        let inputNode = engine.inputNode
-        let inputFormat = inputNode.outputFormat(forBus: 0)
-        onDiagnostic?("Mic input format: \(inputFormat)")
-
-        guard let target = AVAudioFormat(commonFormat: .pcmFormatInt16,
-                                         sampleRate: 8000, channels: 1, interleaved: false)
-        else {
-            throw NSError(domain: "AudioEngine", code: 1,
-                          userInfo: [NSLocalizedDescriptionKey: "Cannot build target audio format"])
-        }
-        guard let conv = AVAudioConverter(from: inputFormat, to: target) else {
-            throw NSError(domain: "AudioEngine", code: 2,
-                          userInfo: [NSLocalizedDescriptionKey:
-                                        "Cannot build AVAudioConverter (\(inputFormat) → \(target))"])
-        }
-
-        let firstFrameSignal = DiagnosticOnce()
-        let firstAudibleSignal = DiagnosticOnce()
-        let diag = onDiagnostic
-        let inSampleRate = inputFormat.sampleRate
-
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: inputFormat) { buffer, _ in
-            Self.processMicBuffer(
-                buffer: buffer,
-                converter: conv,
-                target: target,
-                inSampleRate: inSampleRate,
-                firstFrame: firstFrameSignal,
-                firstAudible: firstAudibleSignal,
-                diag: diag,
-                handler: handler
-            )
-        }
-        tapInstalled = true
-    }
-
-    /// Static helper extracted so the closure passed to `installTap` is
-    /// short enough for the Swift type checker to handle.
-    private static func processMicBuffer(
-        buffer: AVAudioPCMBuffer,
-        converter: AVAudioConverter,
-        target: AVAudioFormat,
-        inSampleRate: Double,
-        firstFrame: DiagnosticOnce,
-        firstAudible: DiagnosticOnce,
-        diag: ((String) -> Void)?,
-        handler: (UnsafeBufferPointer<Int16>) -> Void
-    ) {
-        let outFrames = AVAudioFrameCount(
-            ceil(Double(buffer.frameLength) * 8000.0 / inSampleRate)
-        ) + 64
-        guard let outBuf = AVAudioPCMBuffer(pcmFormat: target, frameCapacity: outFrames)
-        else { return }
-
-        var fed = false
-        var err: NSError?
-        let status = converter.convert(to: outBuf, error: &err) { _, outStatus in
-            if !fed {
-                fed = true
-                outStatus.pointee = .haveData
-                return buffer
-            }
-            outStatus.pointee = .endOfStream
-            return nil
-        }
-        if status == .error { return }
-
-        let n = Int(outBuf.frameLength)
-        guard n > 0 else { return }
-
-        let bp: UnsafeBufferPointer<Int16>
-        if let p = outBuf.int16ChannelData?[0] {
-            bp = UnsafeBufferPointer(start: UnsafePointer(p), count: n)
-        } else if let raw = outBuf.audioBufferList.pointee.mBuffers.mData {
-            let sp = raw.assumingMemoryBound(to: Int16.self)
-            bp = UnsafeBufferPointer(start: sp, count: n)
-        } else {
-            return
-        }
-
-        firstFrame.fireOnce { diag?("First mic frame: \(n) samples") }
-
-        var peak: Int32 = 0
-        for s in bp {
-            let v = Int32(s)
-            let abs = v < 0 ? -v : v
-            if abs > peak { peak = abs }
-        }
-        if peak > 300 {
-            firstAudible.fireOnce {
-                diag?("First audible mic frame: peak=\(peak)")
-            }
-        }
-        handler(bp)
-    }
-
-    private func removeMicTap() {
-        guard tapInstalled else { return }
-        engine.inputNode.removeTap(onBus: 0)
-        tapInstalled = false
-    }
-}
-
-/// Tiny one-shot guard used to fire diagnostic logs once. Safe across
-/// audio threads.
-private final class DiagnosticOnce: @unchecked Sendable {
-    private let lock = NSLock()
-    private var fired = false
-
-    func fireOnce(_ block: () -> Void) {
-        lock.lock()
-        let go = !fired
-        fired = true
-        lock.unlock()
-        if go { block() }
-    }
 }
 
 final class ThreadsafeCounter: @unchecked Sendable {

@@ -146,15 +146,16 @@ final class AppState: ObservableObject {
             let ok = await AudioEngine.requestMicAuthorization()
             if !ok {
                 self.appendLog(.init(direction: .sent, kind: .error,
-                                     summary: "Microphone access denied — sending silence"))
-            }
-            do {
-                try self.audioEngine.startCallMode(micBuffer: self.callMicBuffer)
-                self.appendLog(.init(direction: .sent, kind: .info,
-                                     summary: "Mic → RTP started"))
-            } catch {
-                self.appendLog(.init(direction: .sent, kind: .error,
-                                     summary: "Mic start failed: \(error.localizedDescription)"))
+                                     summary: "Microphone access denied — sending silence. Enable SIP Client in System Settings → Privacy & Security → Microphone."))
+            } else {
+                do {
+                    try self.audioEngine.startCallMode(micBuffer: self.callMicBuffer)
+                    self.appendLog(.init(direction: .sent, kind: .info,
+                                         summary: "Mic → RTP started"))
+                } catch {
+                    self.appendLog(.init(direction: .sent, kind: .error,
+                                         summary: "Mic start failed: \(error.localizedDescription)"))
+                }
             }
 
             // Now wire up RTP receive → playback. By the time the first

@@ -119,10 +119,8 @@ final class RTPSession: @unchecked Sendable {
     /// 50 ms gap between digits.
     func sendDTMFDigits(_ digits: String) async {
         guard let dtmfPT else { return }
-        seqLock.lock(); _dtmfMode = true; seqLock.unlock()
-        defer {
-            seqLock.lock(); _dtmfMode = false; seqLock.unlock()
-        }
+        setDTMFMode(true)
+        defer { setDTMFMode(false) }
         // Let the audio sender notice and stop emitting frames.
         try? await Task.sleep(nanoseconds: 25_000_000)
 
@@ -132,9 +130,7 @@ final class RTPSession: @unchecked Sendable {
         for ch in digits {
             guard let event = Self.dtmfEvent(for: ch) else { continue }
 
-            seqLock.lock()
-            let baseTS = _timestamp
-            seqLock.unlock()
+            let baseTS = currentTimestamp()
 
             for i in 0..<packetsPerEvent {
                 let isEnd = i >= packetsPerEvent - 3
@@ -154,12 +150,25 @@ final class RTPSession: @unchecked Sendable {
             }
 
             // Advance the audio timestamp past the event so it stays consistent.
-            seqLock.lock()
-            _timestamp = baseTS &+ frameSamples * UInt32(packetsPerEvent)
-            seqLock.unlock()
+            setTimestamp(baseTS &+ frameSamples * UInt32(packetsPerEvent))
 
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
+    }
+
+    private func setDTMFMode(_ active: Bool) {
+        seqLock.lock(); defer { seqLock.unlock() }
+        _dtmfMode = active
+    }
+
+    private func currentTimestamp() -> UInt32 {
+        seqLock.lock(); defer { seqLock.unlock() }
+        return _timestamp
+    }
+
+    private func setTimestamp(_ ts: UInt32) {
+        seqLock.lock(); defer { seqLock.unlock() }
+        _timestamp = ts
     }
 
     func stop() {

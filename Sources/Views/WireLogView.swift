@@ -69,12 +69,22 @@ struct WireLogView: View {
 
             HSplitView {
                 logList
-                    .frame(minWidth: 360)
+                    .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
 
                 detailPane
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .toolbar {
+            ToolbarItem {
+                Button {
+                    exportFilteredLog()
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.down")
+                }
+                .disabled(filteredEntries.isEmpty)
+            }
             ToolbarItem {
                 Button {
                     appState.clearLog()
@@ -86,6 +96,56 @@ struct WireLogView: View {
             }
         }
         .navigationTitle("Wire Log")
+    }
+
+    private static let exportTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
+        return f
+    }()
+
+    private static let filenameTimeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyyMMdd-HHmmss"
+        return f
+    }()
+
+    private func exportFilteredLog() {
+        let entries = filteredEntries
+        guard !entries.isEmpty else { return }
+        let text = formatLogForExport(entries)
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.nameFieldStringValue = "sip-wire-log-\(Self.filenameTimeFormatter.string(from: Date())).txt"
+        panel.canCreateDirectories = true
+        panel.title = "Export Wire Log"
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            let alert = NSAlert()
+            alert.messageText = "Failed to save wire log"
+            alert.informativeText = error.localizedDescription
+            alert.alertStyle = .warning
+            alert.runModal()
+        }
+    }
+
+    private func formatLogForExport(_ entries: [WireLogEntry]) -> String {
+        var out = ""
+        for entry in entries {
+            let ts = Self.exportTimeFormatter.string(from: entry.timestamp)
+            let dir = entry.direction == .sent ? "→" : "←"
+            out += "\(ts) [\(entry.kind.rawValue)] \(dir) \(entry.summary)\n"
+            if let detail = entry.detail, !detail.isEmpty {
+                for line in detail.split(separator: "\n", omittingEmptySubsequences: false) {
+                    out += "    \(line)\n"
+                }
+            }
+        }
+        return out
     }
 
     @ViewBuilder
