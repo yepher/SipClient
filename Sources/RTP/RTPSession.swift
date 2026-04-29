@@ -1,12 +1,15 @@
 import Foundation
 
-/// Minimal RTP sender + receiver for 8 kHz, 20 ms G.711 frames (160 samples = 160 bytes).
+/// Minimal RTP sender + receiver, codec-driven.
 ///
-/// Send side: a background task pulls 20 ms PCM frames from `micBuffer`, G.711-
-/// encodes them, and sends. Empty buffer → silence so the call stays open.
+/// Send side: a background task pulls one codec-frame of PCM from
+/// `micBuffer`, encodes via the configured codec, and sends. When the
+/// buffer is empty we still encode a silent frame so the codec's
+/// adaptive state stays consistent (matters for G.722) and the peer's
+/// media path stays open.
 ///
 /// Receive side: a background task drains incoming RTP, parses the header,
-/// decodes G.711 to Int16 PCM, and forwards via `onPlaybackPCM`.
+/// decodes via the configured codec, and forwards via `onPlaybackPCM`.
 ///
 /// DTMF (RFC 4733): `sendDTMFDigits` flips `dtmfMode` so the audio sender
 /// pauses, then emits 4-byte event packets at the negotiated DTMF PT.
@@ -15,6 +18,7 @@ final class RTPSession: @unchecked Sendable {
     let remoteHost: String
     let remotePort: UInt16
     var payloadType: UInt8
+    let codec: CodecKind
     /// DTMF (telephone-event) payload type from the SDP answer, if any.
     var dtmfPT: UInt8?
 
@@ -28,7 +32,8 @@ final class RTPSession: @unchecked Sendable {
     /// Producer for outgoing audio. Empty → silence is sent.
     var micBuffer: FrameBuffer?
 
-    /// Called from the receive task with decoded 8 kHz Int16 mono samples.
+    /// Called from the receive task with decoded Int16 mono PCM at the
+    /// codec's native sample rate (8 kHz for G.711, 16 kHz for G.722).
     var onPlaybackPCM: (@Sendable ([Int16]) -> Void)?
 
     /// Called when an incoming RTP packet has the DTMF payload type.
@@ -40,11 +45,21 @@ final class RTPSession: @unchecked Sendable {
     private var sendTask: Task<Void, Never>?
     private var recvTask: Task<Void, Never>?
 
-    init(socket: UDPSocket, remoteHost: String, remotePort: UInt16, payloadType: UInt8) {
+    private let encoder: CodecEncoder
+    private let decoder: CodecDecoder
+
+    init(socket: UDPSocket,
+         remoteHost: String,
+         remotePort: UInt16,
+         payloadType: UInt8,
+         codec: CodecKind) {
         self.socket = socket
         self.remoteHost = remoteHost
         self.remotePort = remotePort
         self.payloadType = payloadType
+        self.codec = codec
+        self.encoder = codec.makeEncoder()
+        self.decoder = codec.makeDecoder()
         self.ssrc = UInt32.random(in: 1...UInt32.max)
         self._seq = UInt16.random(in: 0...UInt16.max)
         self._timestamp = UInt32.random(in: 0...UInt32.max)
@@ -52,33 +67,28 @@ final class RTPSession: @unchecked Sendable {
 
     // MARK: - Public send API
 
-    /// Send a single 20 ms G.711 audio frame.
+    /// Send a single 20 ms encoded audio frame.
     func sendFrame(_ payload: Data) throws {
-        precondition(payload.count == 160, "RTP frame must be 160 bytes for 8 kHz/20 ms G.711")
         try sendPacket(payloadType: payloadType, payload: payload, marker: false,
-                       timestampAdvance: 160)
+                       timestampAdvance: codec.timestampAdvance)
     }
 
-    /// Start the audio send loop. Pulls 160-sample frames from `micBuffer`
-    /// or sends silence. Halts naturally when `stop()` is called.
+    /// Start the audio send loop. Pulls codec-sized PCM frames from
+    /// `micBuffer`, encodes, and sends. Halts naturally when `stop()`.
     func startSending() {
-        let silenceByte = G711.silenceByte(payloadType: payloadType)
-        let silence = Data(repeating: silenceByte, count: 160)
+        let frameSize = codec.samplesPerFrame
         sendTask = Task.detached(priority: .userInitiated) { [weak self] in
             let interval: UInt64 = 20_000_000
             var nextDeadline = DispatchTime.now().uptimeNanoseconds
+            let silentPCM = [Int16](repeating: 0, count: frameSize)
             while !Task.isCancelled {
                 guard let self else { return }
                 if self.dtmfModeIsActive() {
                     try? await Task.sleep(nanoseconds: interval)
                     continue
                 }
-                let frame: Data
-                if let pcm = self.micBuffer?.readFrame() {
-                    frame = self.encode(pcm: pcm)
-                } else {
-                    frame = silence
-                }
+                let pcm = self.micBuffer?.readFrame(size: frameSize) ?? silentPCM
+                let frame = self.encoder.encode(pcm: pcm)
                 do {
                     try self.sendFrame(frame)
                 } catch {
@@ -217,17 +227,7 @@ final class RTPSession: @unchecked Sendable {
         try socket.send(pkt, to: remoteHost, port: remotePort)
     }
 
-    // MARK: - Internal: encoding & receive
-
-    private func encode(pcm: [Int16]) -> Data {
-        var out = Data(count: 160)
-        for i in 0..<160 {
-            out[i] = (payloadType == 8)
-                ? G711.linearToALaw(pcm[i])
-                : G711.linearToMuLaw(pcm[i])
-        }
-        return out
-    }
+    // MARK: - Internal: receive
 
     private func dtmfModeIsActive() -> Bool {
         seqLock.lock(); defer { seqLock.unlock() }
@@ -254,12 +254,7 @@ final class RTPSession: @unchecked Sendable {
             return
         }
 
-        var pcm = [Int16](repeating: 0, count: payload.count)
-        for i in 0..<payload.count {
-            pcm[i] = (pt == 8)
-                ? G711.aLawToLinear(payload[i])
-                : G711.muLawToLinear(payload[i])
-        }
+        let pcm = decoder.decode(payload: payload)
         onPlaybackPCM?(pcm)
     }
 

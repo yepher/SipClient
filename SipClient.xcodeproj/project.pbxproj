@@ -19,6 +19,9 @@
 		831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B361FCC5C7F35618659A5B /* AudioEngine.swift */; };
 		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */; };
+		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
+		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
 		B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C5DA24C5E19148C27D46D /* WireLogEntry.swift */; };
 		B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091382AF4736A88FFCA6EB39 /* SDP.swift */; };
@@ -32,7 +35,6 @@
 		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
 		F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766643A131738D6EF1467CA3 /* SipClientApp.swift */; };
 		FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */; };
 		FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90C4A45FD677688E94478215 /* LevelMeter.swift */; };
 		FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE6F1B5011F182DC913B3203 /* AppState.swift */; };
 		FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 309E10E277E500AF96790CD4 /* WAVFile.swift */; };
@@ -54,12 +56,14 @@
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
 		867E2734C4684D7FA23C7484 /* SipClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SipClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBuffer.swift; sourceTree = "<group>"; };
-		B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
 		90C4A45FD677688E94478215 /* LevelMeter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelMeter.swift; sourceTree = "<group>"; };
 		93CBEEEE944B5F904E5DC7DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		99BA9EF93C60BEC12254D5D0 /* AudioDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevices.swift; sourceTree = "<group>"; };
 		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
+		D1E1F1020304050607A8B9CD /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
+		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
 		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
 		BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedSampleBuffer.swift; sourceTree = "<group>"; };
 		C3B361FCC5C7F35618659A5B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
@@ -90,7 +94,9 @@
 		44186F1767AF19E7827440F3 /* RTP */ = {
 			isa = PBXGroup;
 			children = (
+				D1E1F1020304050607A8B9CD /* Codec.swift */,
 				4920A5B0B76F41B91A524FBD /* G711.swift */,
+				D2E2F2030405060708A9BACE /* G722.swift */,
 				AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */,
 			);
 			path = RTP;
@@ -269,6 +275,8 @@
 				FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */,
 				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */,
+				C0D0E0F010203040506A7B8C /* Codec.swift in Sources */,
+				C1D1E1F11203040506A7B8CD /* G722.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
 				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,
 				54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */,
@@ -433,6 +441,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -452,6 +461,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

@@ -71,8 +71,14 @@ struct InCallView: View {
     @ViewBuilder
     private var audioDeviceRow: some View {
         HStack(spacing: 8) {
-            Image(systemName: "mic")
-                .foregroundStyle(.secondary)
+            Button {
+                appState.toggleMicMuted()
+            } label: {
+                Image(systemName: appState.micMuted ? "mic.slash.fill" : "mic.fill")
+                    .foregroundStyle(appState.micMuted ? .red : .secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(appState.micMuted ? "Unmute microphone" : "Mute microphone")
             Picker("", selection: Binding<AudioDeviceID>(
                 get: { appState.selectedInputDeviceID },
                 set: { appState.setInputDevice($0) }

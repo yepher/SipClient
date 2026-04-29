@@ -52,6 +52,7 @@ final class SIPCall: @unchecked Sendable {
     private(set) var remoteRTPHost: String = ""
     private(set) var remoteRTPPort: UInt16 = 0
     private(set) var negotiatedPT: UInt8 = 0
+    private(set) var negotiatedCodec: CodecKind = .pcmu
     private(set) var negotiatedDTMFPT: UInt8?
 
     private(set) var answered = false
@@ -188,6 +189,7 @@ final class SIPCall: @unchecked Sendable {
                 remoteRTPHost = ans.remoteHost
                 remoteRTPPort = ans.remotePort
                 negotiatedPT = ans.audioPT
+                negotiatedCodec = ans.codec
                 negotiatedDTMFPT = ans.dtmfPT
 
                 let ack = buildACK(toTag: toTag)
@@ -195,7 +197,7 @@ final class SIPCall: @unchecked Sendable {
                 try sip.send(Data(ack.utf8), to: cfg.sipHost, port: cfg.sipPort)
 
                 answered = true
-                emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT)")
+                emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT) codec=\(negotiatedCodec.rtpmapName)")
 
             default:
                 if status >= 400 {
@@ -222,7 +224,8 @@ final class SIPCall: @unchecked Sendable {
         let rtpSession = RTPSession(socket: rtp,
                                     remoteHost: remoteRTPHost,
                                     remotePort: remoteRTPPort,
-                                    payloadType: negotiatedPT)
+                                    payloadType: negotiatedPT,
+                                    codec: negotiatedCodec)
         rtpSession.dtmfPT = negotiatedDTMFPT
         onMediaReady?(rtpSession)
         rtpSession.startSending()
@@ -288,7 +291,7 @@ final class SIPCall: @unchecked Sendable {
         let rtpIP = publicRTPIP
         let rtpPort = publicRTPPort
         let contactURI = "sip:\(cfg.fromUser)@\(sipIP):\(sipPort)"
-        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort)
+        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort, codecs: cfg.codecs)
 
         var s = ""
         s += "INVITE \(toURI) SIP/2.0\r\n"
@@ -332,7 +335,7 @@ final class SIPCall: @unchecked Sendable {
         let rtpIP = publicRTPIP
         let rtpPort = publicRTPPort
         let contactURI = "sip:\(cfg.fromUser)@\(sipIP):\(sipPort)"
-        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort)
+        let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort, codecs: cfg.codecs)
 
         let authLine =
             "\(authHeaderName): Digest username=\"\(authUser)\"," +

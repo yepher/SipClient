@@ -17,6 +17,10 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     var localRTPPort: UInt16
     var callDuration: Double
 
+    /// Codecs to advertise in SDP, in preference order.
+    /// Decoded with a default for older saved profiles.
+    var codecs: [CodecKind] = [.pcmu, .pcma]
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -30,7 +34,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         stunServer: String = "",
         localSIPPort: UInt16 = 5060,
         localRTPPort: UInt16 = 10000,
-        callDuration: Double = 30
+        callDuration: Double = 30,
+        codecs: [CodecKind] = [.pcmu, .pcma]
     ) {
         self.id = id
         self.name = name
@@ -45,6 +50,27 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.localSIPPort = localSIPPort
         self.localRTPPort = localRTPPort
         self.callDuration = callDuration
+        self.codecs = codecs
+    }
+
+    /// Custom decoder that defaults `codecs` for older saved profiles
+    /// that pre-date the field.
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        self.id = try c.decode(UUID.self, forKey: .id)
+        self.name = try c.decode(String.self, forKey: .name)
+        self.sipHost = try c.decode(String.self, forKey: .sipHost)
+        self.sipPort = try c.decode(UInt16.self, forKey: .sipPort)
+        self.toURI = try c.decode(String.self, forKey: .toURI)
+        self.fromUser = try c.decode(String.self, forKey: .fromUser)
+        self.fromDisplay = try c.decode(String.self, forKey: .fromDisplay)
+        self.authUser = try c.decode(String.self, forKey: .authUser)
+        self.useSTUN = try c.decode(Bool.self, forKey: .useSTUN)
+        self.stunServer = try c.decode(String.self, forKey: .stunServer)
+        self.localSIPPort = try c.decode(UInt16.self, forKey: .localSIPPort)
+        self.localRTPPort = try c.decode(UInt16.self, forKey: .localRTPPort)
+        self.callDuration = try c.decode(Double.self, forKey: .callDuration)
+        self.codecs = (try? c.decode([CodecKind].self, forKey: .codecs)) ?? [.pcmu, .pcma]
     }
 
     func callConfig(authPassword: String) -> SIPCallConfig {
@@ -60,6 +86,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.localSIPPort = localSIPPort
         cfg.localRTPPort = localRTPPort
         cfg.callDuration = callDuration
+        cfg.codecs = codecs.isEmpty ? [.pcmu, .pcma] : codecs
         return cfg
     }
 }

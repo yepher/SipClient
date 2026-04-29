@@ -20,6 +20,20 @@ final class AudioEngine: ObservableObject {
     @Published private(set) var sendLevel: Double = 0
     /// Smoothed 0–1 receive level (decoded RTP).
     @Published private(set) var recvLevel: Double = 0
+    /// True when the local mic is muted: captured samples are dropped
+    /// (encoder sees silence on the wire, send VU goes flat).
+    @Published private(set) var micMuted: Bool = false
+
+    /// Lock-protected mute flag readable from the audio queue thread.
+    /// `micMuted` (the @Published) is the MainActor-side view that drives UI.
+    private let mutedFlag = ThreadsafeFlag()
+
+    func setMicMuted(_ muted: Bool) {
+        mutedFlag.value = muted
+        micMuted = muted
+    }
+
+    func toggleMicMuted() { setMicMuted(!micMuted) }
 
     let levelMeter = LevelMeter()
 
@@ -30,7 +44,10 @@ final class AudioEngine: ObservableObject {
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
-    private let playFormat: AVAudioFormat
+    /// Player → mainMixer connection format. Mutates per call so playback
+    /// matches the negotiated codec's native rate (8 kHz for G.711,
+    /// 16 kHz for G.722). Reconnect requires the engine to be stopped.
+    private var playFormat: AVAudioFormat
     /// Mic capture is done via AVCaptureSession instead of AVAudioEngine's
     /// input node — the latter is unreliable on macOS (delivers a single
     /// buffer and stalls; VPIO fails to construct an aggregate device on
@@ -42,6 +59,7 @@ final class AudioEngine: ObservableObject {
     private var heartbeatTimer: AnyCancellable?
     /// Held weakly enough for a same-call restart after a device change.
     private weak var lastCallMicBuffer: FrameBuffer?
+    private var lastCallCodec: CodecKind = .pcmu
 
     /// User-selected device IDs (kAudioObjectUnknown = use system default).
     private var preferredInputDeviceID: AudioDeviceID = kAudioObjectUnknown
@@ -95,13 +113,12 @@ final class AudioEngine: ObservableObject {
         // route. The queue is rebuilt because kAudioQueueProperty_CurrentDevice
         // can only be set before AudioQueueStart.
         if mode == .call || mode == .record {
-            let wasMode = mode
             micCapture.stop()
             do {
                 try micCapture.start()
             } catch {
                 onDiagnostic?("Restart after input device change failed: \(error.localizedDescription)")
-                if wasMode == .call { stopCallMode() }
+                if mode == .call { stopCallMode() }
             }
         }
         objectWillChange.send()
@@ -169,9 +186,10 @@ final class AudioEngine: ObservableObject {
 
     // MARK: - Call mode
 
-    func startCallMode(micBuffer: FrameBuffer) throws {
+    func startCallMode(micBuffer: FrameBuffer, codec: CodecKind) throws {
         guard mode == .idle else { return }
         lastCallMicBuffer = micBuffer
+        lastCallCodec = codec
         micFrameCount.reset()
         micPeakTracker.reset()
         let levels = levelMeter
@@ -187,15 +205,42 @@ final class AudioEngine: ObservableObject {
             ])
         }
 
+        // Reconfigure player for this call's codec rate (8 kHz for G.711,
+        // 16 kHz for G.722). The player → mainMixer connection format must
+        // match what enqueuePlayback will produce.
+        if engine.isRunning { engine.stop() }
+        engine.disconnectNodeOutput(player)
+        guard let format = AVAudioFormat(commonFormat: .pcmFormatFloat32,
+                                         sampleRate: codec.inputSampleRate,
+                                         channels: 1, interleaved: false)
+        else {
+            throw NSError(domain: "AudioEngine", code: 101, userInfo: [
+                NSLocalizedDescriptionKey: "Could not build playback format for \(codec.rtpmapName)"
+            ])
+        }
+        playFormat = format
+        engine.connect(player, to: engine.mainMixerNode, format: playFormat)
+        onDiagnostic?("Codec \(codec.rtpmapName) — playback at \(Int(codec.inputSampleRate)) Hz")
+
         // Start playback engine so RTP receive can flow.
         try ensureRunning()
 
-        // Wire MicCapture diagnostics to the wire log and start capturing.
+        // Mic capture rate must match the encoder's input rate.
+        micCapture.sampleRate = codec.inputSampleRate
         let onDiag = onDiagnostic
+        let muted = mutedFlag
         micCapture.onDiagnostic = { msg in onDiag?(msg) }
         micCapture.onSamples = { samples in
-            levels.recordSend(samples)
             counter.increment()
+            if muted.value {
+                // Drive both meters to zero and skip the mic buffer
+                // write so the RTP send loop encodes silence.
+                let zeros = [Int16](repeating: 0, count: samples.count)
+                zeros.withUnsafeBufferPointer { levels.recordSend($0) }
+                peaks.update(0)
+                return
+            }
+            levels.recordSend(samples)
             var peak: Int32 = 0
             for s in samples {
                 let v = Int32(s)
@@ -306,6 +351,15 @@ final class AudioEngine: ObservableObject {
         levelTimer = nil
     }
 
+}
+
+final class ThreadsafeFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var v: Bool = false
+    var value: Bool {
+        get { lock.lock(); defer { lock.unlock() }; return v }
+        set { lock.lock(); v = newValue; lock.unlock() }
+    }
 }
 
 final class ThreadsafeCounter: @unchecked Sendable {

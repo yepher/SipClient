@@ -25,7 +25,8 @@ final class AppState: ObservableObject {
 
     /// Shared mic→RTP buffer. The mic tap writes here, the RTP send loop
     /// reads from here. Empty → silence is sent.
-    let callMicBuffer = FrameBuffer(maxSeconds: 1.0)
+    /// Sized at 1 s × 48 kHz so any codec rate (8/16/48 kHz) fits.
+    let callMicBuffer = FrameBuffer(maxSeconds: 1.0, sampleRate: 48000)
 
     /// The active call's RTP session, exposed so scenarios can send DTMF.
     private var currentRTPSession: RTPSession?
@@ -38,6 +39,10 @@ final class AppState: ObservableObject {
     /// Forward audioEngine's @Published changes (level meters, mode) into
     /// AppState's own publisher so any view bound to `appState` sees them.
     private var engineSubscription: AnyCancellable?
+
+    /// CoreAudio property listener that fires when the system device
+    /// list changes (e.g. AirPods connect, USB mic plug/unplug).
+    private var deviceListObserver: DeviceListObserver?
 
     init() {
         loadAudioLibrary()
@@ -55,6 +60,14 @@ final class AppState: ObservableObject {
             Task { @MainActor in
                 self?.appendLog(.init(direction: .sent, kind: .info,
                                       summary: "audio: \(msg)"))
+            }
+        }
+
+        // Auto-refresh the device dropdowns when the system device list
+        // changes (AirPods connect, USB mic plug/unplug, etc).
+        deviceListObserver = AudioDevices.observeDeviceListChanges { [weak self] in
+            Task { @MainActor in
+                self?.refreshAudioDevices()
             }
         }
     }
@@ -149,7 +162,8 @@ final class AppState: ObservableObject {
                                      summary: "Microphone access denied — sending silence. Enable SIP Client in System Settings → Privacy & Security → Microphone."))
             } else {
                 do {
-                    try self.audioEngine.startCallMode(micBuffer: self.callMicBuffer)
+                    try self.audioEngine.startCallMode(micBuffer: self.callMicBuffer,
+                                                       codec: rtp.codec)
                     self.appendLog(.init(direction: .sent, kind: .info,
                                          summary: "Mic → RTP started"))
                 } catch {
@@ -206,6 +220,13 @@ final class AppState: ObservableObject {
     }
     func setOutputDevice(_ id: AudioDeviceID) {
         audioEngine.setOutputDevice(id)
+    }
+
+    var micMuted: Bool { audioEngine.micMuted }
+    func toggleMicMuted() {
+        audioEngine.toggleMicMuted()
+        appendLog(.init(direction: .sent, kind: .info,
+                        summary: audioEngine.micMuted ? "Mic muted" : "Mic unmuted"))
     }
 
     /// Send DTMF digits over the active call as RFC 4733 events.

@@ -1,18 +1,20 @@
 import Foundation
 
-/// Thread-safe FIFO of 16-bit mono 8 kHz PCM samples.
+/// Thread-safe FIFO of 16-bit mono PCM samples.
 ///
-/// Producer (mic tap or clip iterator) calls `write`; consumer (RTP send
-/// loop) calls `readFrame()` to pull 20 ms / 160-sample chunks. If no
+/// Producer (mic capture or clip iterator) calls `write`; consumer (RTP
+/// send loop) calls `readFrame(size:)` to pull a codec-sized chunk. If no
 /// frame is available the consumer should fall back to silence.
 final class FrameBuffer: @unchecked Sendable {
     private var samples: [Int16] = []
     private let lock = NSLock()
     private let maxSamples: Int
 
-    /// `maxSeconds` is the soft cap; older samples are dropped when exceeded.
-    init(maxSeconds: Double = 1.0) {
-        self.maxSamples = Int(maxSeconds * 8000)
+    /// `maxSeconds` is the soft cap. `sampleRate` sets the cap in samples
+    /// — pass the codec's input sample rate so the cap is the same number
+    /// of seconds regardless of codec.
+    init(maxSeconds: Double = 1.0, sampleRate: Double = 8000) {
+        self.maxSamples = Int(maxSeconds * sampleRate)
     }
 
     func write(_ chunk: [Int16]) {
@@ -23,12 +25,12 @@ final class FrameBuffer: @unchecked Sendable {
         }
     }
 
-    /// Returns `nil` if fewer than 160 samples are buffered.
-    func readFrame() -> [Int16]? {
+    /// Returns `nil` if fewer than `size` samples are buffered.
+    func readFrame(size: Int) -> [Int16]? {
         lock.lock(); defer { lock.unlock() }
-        guard samples.count >= 160 else { return nil }
-        let out = Array(samples.prefix(160))
-        samples.removeFirst(160)
+        guard samples.count >= size else { return nil }
+        let out = Array(samples.prefix(size))
+        samples.removeFirst(size)
         return out
     }
 

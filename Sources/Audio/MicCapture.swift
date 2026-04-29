@@ -12,8 +12,8 @@ import Foundation
 /// macOS API for raw audio capture and just works.
 final class MicCapture: NSObject, @unchecked Sendable {
     /// Called from the AudioQueue's internal thread for each batch of
-    /// 8 kHz mono Int16 samples. The pointer's lifetime ends when the
-    /// closure returns.
+    /// mono Int16 samples at `sampleRate`. The pointer's lifetime ends
+    /// when the closure returns.
     var onSamples: (@Sendable (UnsafeBufferPointer<Int16>) -> Void)?
 
     var onDiagnostic: (@Sendable (String) -> Void)?
@@ -22,22 +22,19 @@ final class MicCapture: NSObject, @unchecked Sendable {
     /// default input. Changes take effect on the next `start()`.
     var preferredDeviceUID: String?
 
-    private static let captureSampleRate: Double = 16000
-    private static let captureBufferFrames: UInt32 = 1600 // 100 ms at 16 kHz
+    /// Sample rate to capture at. Defaults to 8 kHz (G.711). Set to
+    /// 16000 for G.722, 48000 for Opus. AudioQueue handles resampling
+    /// from the device's native rate internally. Takes effect on next
+    /// `start()`.
+    var sampleRate: Double = 8000
+
     private static let bufferCount = 3
 
     private var queue: AudioQueueRef?
     private var allocatedBuffers: [AudioQueueBufferRef] = []
-    private var converter: AVAudioConverter?
-    private var sourceFormat: AVAudioFormat?
-    private let targetFormat: AVAudioFormat
     private var firstFrameLogged = false
 
     override init() {
-        guard let f = AVAudioFormat(commonFormat: .pcmFormatInt16,
-                                    sampleRate: 8000, channels: 1, interleaved: false)
-        else { fatalError("Could not build 8 kHz mono Int16 format") }
-        self.targetFormat = f
         super.init()
     }
 
@@ -47,7 +44,7 @@ final class MicCapture: NSObject, @unchecked Sendable {
         guard queue == nil else { return }
 
         var asbd = AudioStreamBasicDescription(
-            mSampleRate: Self.captureSampleRate,
+            mSampleRate: sampleRate,
             mFormatID: kAudioFormatLinearPCM,
             mFormatFlags: kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked,
             mBytesPerPacket: 2,
@@ -57,14 +54,6 @@ final class MicCapture: NSObject, @unchecked Sendable {
             mBitsPerChannel: 16,
             mReserved: 0
         )
-
-        guard let src = AVAudioFormat(streamDescription: &asbd) else {
-            throw NSError(domain: "MicCapture", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Could not build source AVAudioFormat"
-            ])
-        }
-        sourceFormat = src
-        converter = AVAudioConverter(from: src, to: targetFormat)
 
         var newQueue: AudioQueueRef?
         let userData = Unmanaged.passUnretained(self).toOpaque()
@@ -104,7 +93,10 @@ final class MicCapture: NSObject, @unchecked Sendable {
         }
 
         let bytesPerFrame = asbd.mBytesPerFrame
-        let bufferByteSize = Self.captureBufferFrames * bytesPerFrame
+        // 100 ms of buffer at the chosen rate (e.g. 800 frames at 8 kHz,
+        // 1600 at 16 kHz, 4800 at 48 kHz).
+        let captureBufferFrames = UInt32(sampleRate / 10)
+        let bufferByteSize = captureBufferFrames * bytesPerFrame
         for _ in 0..<Self.bufferCount {
             var buf: AudioQueueBufferRef?
             let allocStatus = AudioQueueAllocateBuffer(q, bufferByteSize, &buf)
@@ -129,8 +121,8 @@ final class MicCapture: NSObject, @unchecked Sendable {
         }
 
         queue = q
-        onDiagnostic?("MicCapture started: \(Int(Self.captureSampleRate)) Hz mono Int16, "
-                      + "\(Self.bufferCount)×\(Self.captureBufferFrames)-frame buffers")
+        onDiagnostic?("MicCapture started: \(Int(sampleRate)) Hz mono Int16, "
+                      + "\(Self.bufferCount)x\(captureBufferFrames)-frame buffers")
     }
 
     func stop() {
@@ -151,31 +143,20 @@ final class MicCapture: NSObject, @unchecked Sendable {
               let raw = buffer.pointee.mAudioData as UnsafeMutableRawPointer?
         else { return }
 
-        let inFrameCount = byteCount / MemoryLayout<Int16>.size
-        let inSamples = UnsafeBufferPointer<Int16>(
+        let frameCount = byteCount / MemoryLayout<Int16>.size
+        guard frameCount > 0 else { return }
+
+        let samples = UnsafeBufferPointer<Int16>(
             start: raw.assumingMemoryBound(to: Int16.self),
-            count: inFrameCount
+            count: frameCount
         )
-
-        // Downsample 16 kHz → 8 kHz by simple decimation (every 2nd sample).
-        // This is fine for telephony-band audio — we only care about
-        // 0–4 kHz so aliasing risk is minimal at this rate.
-        let outFrameCount = inFrameCount / 2
-        guard outFrameCount > 0 else { return }
-
-        var out = [Int16](repeating: 0, count: outFrameCount)
-        for i in 0..<outFrameCount {
-            out[i] = inSamples[i * 2]
-        }
 
         if !firstFrameLogged {
             firstFrameLogged = true
-            onDiagnostic?("MicCapture first frame: \(outFrameCount) samples (8 kHz)")
+            onDiagnostic?("MicCapture first frame: \(frameCount) samples at \(Int(sampleRate)) Hz")
         }
 
-        out.withUnsafeBufferPointer { bp in
-            onSamples?(bp)
-        }
+        onSamples?(samples)
     }
 }
 

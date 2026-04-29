@@ -29,6 +29,7 @@ struct DialerView: View {
                 authSection
                 natSection
                 localSection
+                codecSection
                 placeCallSection
             }
             .formStyle(.grouped)
@@ -155,6 +156,34 @@ struct DialerView: View {
     }
 
     @ViewBuilder
+    private var codecSection: some View {
+        Section("Codecs (offered in SDP, peer picks one)") {
+            ForEach(CodecKind.allCases) { kind in
+                Toggle(kind.displayName, isOn: codecToggleBinding(for: kind))
+            }
+            if draft.codecs.isEmpty {
+                Text("Defaults to PCMU + PCMA when none are selected.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// Toggle binding that adds/removes a codec from `draft.codecs`,
+    /// preserving CodecKind.allCases as the canonical preference order.
+    private func codecToggleBinding(for kind: CodecKind) -> Binding<Bool> {
+        Binding<Bool>(
+            get: { draft.codecs.contains(kind) },
+            set: { isOn in
+                var set = Set(draft.codecs)
+                if isOn { set.insert(kind) } else { set.remove(kind) }
+                draft.codecs = CodecKind.allCases.filter { set.contains($0) }
+                hasUnsavedChanges = true
+            }
+        )
+    }
+
+    @ViewBuilder
     private var placeCallSection: some View {
         Section {
             HStack {
@@ -204,7 +233,8 @@ struct DialerView: View {
                         authUser: p.authUser,
                         useSTUN: p.useSTUN, stunServer: p.stunServer,
                         localSIPPort: p.localSIPPort, localRTPPort: p.localRTPPort,
-                        callDuration: p.callDuration
+                        callDuration: p.callDuration,
+                        codecs: p.codecs
                     )
                     appState.upsertProfile(p)
                     appState.selectProfile(p.id)

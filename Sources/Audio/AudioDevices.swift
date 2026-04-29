@@ -37,6 +37,13 @@ enum AudioDevices {
         return result
     }
 
+    /// Watch for system audio device list changes (e.g. AirPods connecting,
+    /// USB mic plugged in). The handler runs on a background queue.
+    /// Cancel by calling `invalidate()` on the returned token.
+    static func observeDeviceListChanges(_ handler: @escaping @Sendable () -> Void) -> DeviceListObserver {
+        return DeviceListObserver(handler: handler)
+    }
+
     /// The system's current default input or output device.
     static func systemDefault(input: Bool) -> AudioDeviceID? {
         var addr = AudioObjectPropertyAddress(
@@ -100,4 +107,43 @@ enum AudioDevices {
         guard status == noErr, let cf = uid else { return nil }
         return cf as String
     }
+}
+
+/// Holds a CoreAudio property listener for the system device list.
+/// Releasing this object (or calling `invalidate()`) removes the listener.
+final class DeviceListObserver: @unchecked Sendable {
+    private let handler: @Sendable () -> Void
+    private var listenerBlock: AudioObjectPropertyListenerBlock?
+    private var addr = AudioObjectPropertyAddress(
+        mSelector: kAudioHardwarePropertyDevices,
+        mScope: kAudioObjectPropertyScopeGlobal,
+        mElement: kAudioObjectPropertyElementMain
+    )
+
+    fileprivate init(handler: @escaping @Sendable () -> Void) {
+        self.handler = handler
+        let block: AudioObjectPropertyListenerBlock = { [handler] _, _ in
+            handler()
+        }
+        self.listenerBlock = block
+        AudioObjectAddPropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &addr,
+            DispatchQueue.global(qos: .userInitiated),
+            block
+        )
+    }
+
+    func invalidate() {
+        guard let block = listenerBlock else { return }
+        AudioObjectRemovePropertyListenerBlock(
+            AudioObjectID(kAudioObjectSystemObject),
+            &addr,
+            DispatchQueue.global(qos: .userInitiated),
+            block
+        )
+        listenerBlock = nil
+    }
+
+    deinit { invalidate() }
 }

@@ -1,18 +1,24 @@
 import Foundation
 
 enum SDP {
-    /// Build an audio SDP offer with G.711 μ-law (PT 0), G.711 A-law (PT 8),
-    /// and telephone-event (PT 101) for DTMF.
-    static func buildAudioOffer(rtpHost: String, rtpPort: UInt16) -> String {
+    /// Build an audio SDP offer advertising the given codec list (in
+    /// preference order) plus telephone-event (PT 101) for DTMF.
+    static func buildAudioOffer(rtpHost: String,
+                                rtpPort: UInt16,
+                                codecs: [CodecKind]) -> String {
+        let list = codecs.isEmpty ? [CodecKind.pcmu, .pcma] : codecs
+        let pts = list.map { String($0.payloadType) }.joined(separator: " ")
+
         var s = ""
         s += "v=0\r\n"
         s += "o=sip-client 0 0 IN IP4 \(rtpHost)\r\n"
         s += "s=SIP Client Call\r\n"
         s += "c=IN IP4 \(rtpHost)\r\n"
         s += "t=0 0\r\n"
-        s += "m=audio \(rtpPort) RTP/AVP 0 8 101\r\n"
-        s += "a=rtpmap:0 PCMU/8000\r\n"
-        s += "a=rtpmap:8 PCMA/8000\r\n"
+        s += "m=audio \(rtpPort) RTP/AVP \(pts) 101\r\n"
+        for c in list {
+            s += "a=rtpmap:\(c.payloadType) \(c.rtpmapLine)\r\n"
+        }
         s += "a=rtpmap:101 telephone-event/8000\r\n"
         s += "a=fmtp:101 0-16\r\n"
         s += "a=sendrecv\r\n"
@@ -22,8 +28,10 @@ enum SDP {
     struct Answer {
         var remoteHost: String = ""
         var remotePort: UInt16 = 0
-        /// Negotiated audio payload type (0 = PCMU, 8 = PCMA).
+        /// Negotiated audio payload type.
         var audioPT: UInt8 = 0
+        /// Negotiated codec, resolved from the PT plus rtpmap entries.
+        var codec: CodecKind = .pcmu
         /// Telephone-event payload type if offered, else nil.
         var dtmfPT: UInt8?
     }
@@ -54,6 +62,21 @@ enum SDP {
         for (pt, name) in rtpmaps where name.lowercased().hasPrefix("telephone-event") {
             ans.dtmfPT = pt
             break
+        }
+        // Resolve the codec: prefer rtpmap name (handles both static and
+        // dynamic PTs), fall back to the static PT table.
+        if let mapped = rtpmaps[ans.audioPT]?.split(separator: "/").first.map(String.init) {
+            switch mapped.uppercased() {
+            case "PCMU": ans.codec = .pcmu
+            case "PCMA": ans.codec = .pcma
+            case "G722": ans.codec = .g722
+            default:
+                if let c = CodecKind.fromStaticPayloadType(ans.audioPT) {
+                    ans.codec = c
+                }
+            }
+        } else if let c = CodecKind.fromStaticPayloadType(ans.audioPT) {
+            ans.codec = c
         }
         return ans
     }
