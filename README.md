@@ -5,9 +5,6 @@ calls, send DTMF, run scripted scenarios, and inspect every SIP and RTP
 exchange in a live wire log.
 
 ![Dialer](screenshot/call_setup.png)
-
-![In Call](screenshot/incall.png)
-
 ## Features
 
 - **SIP UAC** — `INVITE` / `ACK` / `BYE` / `CANCEL`, digest auth (MD5,
