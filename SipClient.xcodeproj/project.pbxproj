@@ -21,21 +21,21 @@
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */; };
 		A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */; };
-		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
-		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
-		C2D3E4F50607080910111213 /* SRTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F50607080910111214 /* SRTP.swift */; };
-		C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60708091011121315 /* SRTPCrypto.swift */; };
-		E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1020304050607080A0B0C0D /* SIPTransport.swift */; };
-		E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2030405060708090A0B0C0E /* StreamSIPTransport.swift */; };
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
 		B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C5DA24C5E19148C27D46D /* WireLogEntry.swift */; };
 		B30872CEF972812BD7BFAA28 /* SIPCustomHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */; };
 		B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091382AF4736A88FFCA6EB39 /* SDP.swift */; };
 		B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */; };
 		BFF4857501F381DE543C14E8 /* InCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B44EE494E591B8E7A59BDB /* InCallView.swift */; };
+		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
+		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
+		C2D3E4F50607080910111213 /* SRTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F50607080910111214 /* SRTP.swift */; };
+		C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60708091011121315 /* SRTPCrypto.swift */; };
 		C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F7D22A8A46A1E2C92618A0 /* STUN.swift */; };
 		D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7085A2F81C837A2152219F /* AudioLibraryView.swift */; };
 		D49A264EF78E3B699591B6EF /* G711.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4920A5B0B76F41B91A524FBD /* G711.swift */; };
+		E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1020304050607080A0B0C0D /* SIPTransport.swift */; };
+		E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2030405060708090A0B0C0E /* StreamSIPTransport.swift */; };
 		E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3FD7D41D5B05E05D014C3E /* DialerView.swift */; };
 		E8C7A32B4A52557E427BCCE2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8C1347B0C933674A442AAAD /* Assets.xcassets */; };
 		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
@@ -56,8 +56,8 @@
 		3935F70332C886A6EE9DE5B9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		4920A5B0B76F41B91A524FBD /* G711.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G711.swift; sourceTree = "<group>"; };
 		616C5DA24C5E19148C27D46D /* WireLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogEntry.swift; sourceTree = "<group>"; };
-		717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCustomHeader.swift; sourceTree = "<group>"; };
 		64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerProfile.swift; sourceTree = "<group>"; };
+		717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCustomHeader.swift; sourceTree = "<group>"; };
 		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
 		77B44EE494E591B8E7A59BDB /* InCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InCallView.swift; sourceTree = "<group>"; };
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
@@ -70,19 +70,19 @@
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
 		B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
 		B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerPlayback.swift; sourceTree = "<group>"; };
-		D1E1F1020304050607A8B9CD /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
-		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
-		D3E4F50607080910111214 /* SRTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTP.swift; sourceTree = "<group>"; };
-		D4E5F60708091011121315 /* SRTPCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTPCrypto.swift; sourceTree = "<group>"; };
-		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
-		F2030405060708090A0B0C0E /* StreamSIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSIPTransport.swift; sourceTree = "<group>"; };
 		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
 		BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedSampleBuffer.swift; sourceTree = "<group>"; };
 		C3B361FCC5C7F35618659A5B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		C8C1347B0C933674A442AAAD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CC8A56B48A1B633CCCD04662 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
+		D1E1F1020304050607A8B9CD /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
+		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
+		D3E4F50607080910111214 /* SRTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTP.swift; sourceTree = "<group>"; };
 		D3F7D22A8A46A1E2C92618A0 /* STUN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STUN.swift; sourceTree = "<group>"; };
+		D4E5F60708091011121315 /* SRTPCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTPCrypto.swift; sourceTree = "<group>"; };
 		EE6F1B5011F182DC913B3203 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
+		F2030405060708090A0B0C0E /* StreamSIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSIPTransport.swift; sourceTree = "<group>"; };
 		F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SipClient.entitlements; sourceTree = "<group>"; };
 		F985791C1644D7A2C7699027 /* SIPCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCall.swift; sourceTree = "<group>"; };
 		F9CEBEB471B82F2FA682B890 /* AudioClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClip.swift; sourceTree = "<group>"; };
@@ -462,14 +462,17 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/SipClient.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SipCall;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 0.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yepher.sipclient;
 				SDKROOT = macosx;
 			};
@@ -482,14 +485,17 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/SipClient.entitlements;
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SipCall;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MARKETING_VERSION = 0.0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yepher.sipclient;
 				SDKROOT = macosx;
 			};
