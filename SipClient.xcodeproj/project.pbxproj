@@ -59,10 +59,10 @@
 		616C5DA24C5E19148C27D46D /* WireLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogEntry.swift; sourceTree = "<group>"; };
 		64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerProfile.swift; sourceTree = "<group>"; };
 		717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCustomHeader.swift; sourceTree = "<group>"; };
-		828E7FC46E703B36AE49F68F /* CallMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMetrics.swift; sourceTree = "<group>"; };
 		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
 		77B44EE494E591B8E7A59BDB /* InCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InCallView.swift; sourceTree = "<group>"; };
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
+		828E7FC46E703B36AE49F68F /* CallMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMetrics.swift; sourceTree = "<group>"; };
 		867E2734C4684D7FA23C7484 /* SipClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SipClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBuffer.swift; sourceTree = "<group>"; };
 		90C4A45FD677688E94478215 /* LevelMeter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelMeter.swift; sourceTree = "<group>"; };
