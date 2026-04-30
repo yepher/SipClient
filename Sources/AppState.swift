@@ -24,6 +24,14 @@ final class AppState: ObservableObject {
     /// A `.sipcall` file the user just opened — drives the import sheet.
     @Published var pendingImport: PendingProfileImport?
 
+    /// UDP listener for inbound calls. Off by default; user toggles it
+    /// from the Inbound tab.
+    let inboundListener = InboundListener()
+    /// Set when a new INVITE arrives. Drives the Answer / Reject prompt.
+    @Published var pendingInbound: InboundCall?
+    /// Active inbound call — set on Answer, cleared when the call ends.
+    private var currentInboundCall: InboundCall?
+
     @Published var inputDevices: [AudioDevice] = []
     @Published var outputDevices: [AudioDevice] = []
 
@@ -45,6 +53,7 @@ final class AppState: ObservableObject {
     /// Forward audioEngine's @Published changes (level meters, mode) into
     /// AppState's own publisher so any view bound to `appState` sees them.
     private var engineSubscription: AnyCancellable?
+    private var inboundListenerSubscription: AnyCancellable?
 
     /// CoreAudio property listener that fires when the system device
     /// list changes (e.g. AirPods connect, USB mic plug/unplug).
@@ -61,6 +70,10 @@ final class AppState: ObservableObject {
         engineSubscription = audioEngine.objectWillChange.sink { [weak self] _ in
             self?.objectWillChange.send()
         }
+        // Same for the inbound listener so the Inbound tab's listening /
+        // status fields refresh.
+        inboundListenerSubscription = inboundListener.objectWillChange
+            .sink { [weak self] _ in self?.objectWillChange.send() }
         // Surface audio engine diagnostics in the wire log.
         audioEngine.onDiagnostic = { [weak self] msg in
             Task { @MainActor in
@@ -157,7 +170,186 @@ final class AppState: ObservableObject {
     }
 
     func hangup() {
+        if let inbound = currentInboundCall, !inbound.ended {
+            try? inbound.hangup()
+            return
+        }
         currentCall?.requestHangup()
+    }
+
+    // MARK: - Inbound call
+
+    /// Hook the listener into AppState and start it. Logs failures.
+    func startInboundListener() {
+        inboundListener.onIncomingInvite = { [weak self] req, host, port in
+            Task { @MainActor in
+                self?.handleIncomingInvite(req, sourceHost: host, sourcePort: port)
+            }
+        }
+        inboundListener.onInDialogRequest = { [weak self] req, host, port in
+            Task { @MainActor in
+                _ = self?.currentInboundCall?.handleInDialogRequest(
+                    req, from: host, port: port
+                )
+            }
+        }
+        inboundListener.onWireLog = { [weak self] entry in
+            Task { @MainActor in self?.appendLog(entry) }
+        }
+        do {
+            try inboundListener.start()
+            appendLog(.init(
+                direction: .sent, kind: .info,
+                summary: "Inbound listener started on port \(inboundListener.localPort)"
+            ))
+        } catch {
+            inboundListener.lastError = error.localizedDescription
+            appendLog(.init(
+                direction: .sent, kind: .error,
+                summary: "Failed to start inbound listener: \(error.localizedDescription)"
+            ))
+        }
+    }
+
+    func stopInboundListener() {
+        inboundListener.stop()
+        appendLog(.init(direction: .sent, kind: .info,
+                        summary: "Inbound listener stopped"))
+    }
+
+    /// Called from the listener when a fresh INVITE arrives. We auto-
+    /// reject with 486 Busy if there's already a call in flight; else
+    /// stage the call and kick out 100 Trying / 180 Ringing immediately
+    /// while the user decides.
+    private func handleIncomingInvite(_ req: SIPRequest,
+                                      sourceHost: String, sourcePort: UInt16) {
+        guard let socket = inboundListener.sharedSocket else { return }
+
+        if callInProgress || pendingInbound != nil || currentInboundCall != nil {
+            // Build a quick 486 directly without InboundCall machinery.
+            let busy = quickRejectResponse(for: req, code: 486, reason: "Busy Here")
+            try? socket.send(Data(busy.utf8), to: sourceHost, port: sourcePort)
+            appendLog(.init(direction: .sent, kind: .info,
+                            summary: "→ 486 Busy Here (already in a call)"))
+            return
+        }
+
+        // Reuse the listener's pre-allocated, STUN-discovered RTP socket.
+        // This guarantees the address we put in our SDP matches the NAT
+        // mapping the peer will hit.
+        guard let rtpSocket = inboundListener.sharedRTPSocket else {
+            appendLog(.init(direction: .sent, kind: .error,
+                            summary: "RTP socket missing — listener not started?"))
+            return
+        }
+
+        let publicSIPHost = inboundListener.publicHost.isEmpty
+            ? inboundListener.detectedLocalIP
+            : inboundListener.publicHost
+        let publicSIPPort: UInt16 = inboundListener.publicSIPPort != 0
+            ? inboundListener.publicSIPPort
+            : inboundListener.localPort
+        // RTP host: prefer STUN-discovered public IP, fall back to
+        // user-supplied publicHost or local IP.
+        let publicRTPHost: String
+        if !inboundListener.stunRTPHost.isEmpty {
+            publicRTPHost = inboundListener.stunRTPHost
+        } else if !inboundListener.publicHost.isEmpty {
+            publicRTPHost = inboundListener.publicHost
+        } else {
+            publicRTPHost = inboundListener.detectedLocalIP
+        }
+        let publicRTPPort: UInt16
+        if inboundListener.stunRTPPort != 0 {
+            publicRTPPort = inboundListener.stunRTPPort
+        } else if inboundListener.publicRTPPort != 0 {
+            publicRTPPort = inboundListener.publicRTPPort
+        } else {
+            publicRTPPort = rtpSocket.localPort
+        }
+
+        let call = InboundCall(
+            invite: req,
+            sourceHost: sourceHost, sourcePort: sourcePort,
+            socket: socket, rtpSocket: rtpSocket,
+            publicSIPHost: publicSIPHost, publicSIPPort: publicSIPPort,
+            publicRTPHost: publicRTPHost, publicRTPPort: publicRTPPort
+        )
+        call.onWireLog = { [weak self] entry in
+            Task { @MainActor in self?.appendLog(entry) }
+        }
+        call.onAnswered = { [weak self] rtp in
+            Task { @MainActor in self?.attachAudio(to: rtp) }
+        }
+        call.onEnded = { [weak self] in
+            Task { @MainActor in self?.handleInboundEnded() }
+        }
+
+        // Polite UAS: send 100 Trying then 180 Ringing immediately so
+        // the peer doesn't retransmit while the user thinks.
+        try? call.sendProvisional(code: 100, reason: "Trying")
+        try? call.sendProvisional(code: 180, reason: "Ringing")
+
+        currentInboundCall = call
+        pendingInbound = call
+        callStatus = "Inbound call from \(call.fromDisplay.isEmpty ? call.fromURI : call.fromDisplay)"
+    }
+
+    func answerInboundCall() {
+        guard let call = currentInboundCall else { return }
+        do {
+            try call.answer()
+            pendingInbound = nil
+            callInProgress = true
+            callStatus = "In Call (inbound)"
+        } catch {
+            appendLog(.init(direction: .sent, kind: .error,
+                            summary: "Answer failed: \(error.localizedDescription)"))
+        }
+    }
+
+    func rejectInboundCall(code: Int = 486, reason: String = "Busy Here") {
+        guard let call = currentInboundCall else { return }
+        try? call.reject(code: code, reason: reason)
+        pendingInbound = nil
+        currentInboundCall = nil
+        callStatus = "Rejected"
+    }
+
+    private func handleInboundEnded() {
+        if currentRTPSession != nil {
+            detachAudio()
+        }
+        callInProgress = false
+        callConnected = false
+        currentInboundCall = nil
+        pendingInbound = nil
+        callStatus = "Ended"
+    }
+
+    /// Build a minimal SIP response without the InboundCall state — used
+    /// for the auto-busy reject when no call slot is available.
+    private func quickRejectResponse(for req: SIPRequest,
+                                     code: Int, reason: String) -> String {
+        let via = req.firstHeader("via") ?? ""
+        let from = req.firstHeader("from") ?? ""
+        var to = req.firstHeader("to") ?? ""
+        if SIPHeaders.tagParam(to) == nil {
+            to += ";tag=\(SIPTokens.tag())"
+        }
+        let callid = req.firstHeader("call-id") ?? ""
+        let cseq = req.firstHeader("cseq") ?? "1 INVITE"
+        return """
+        SIP/2.0 \(code) \(reason)\r
+        Via: \(via)\r
+        From: \(from)\r
+        To: \(to)\r
+        Call-ID: \(callid)\r
+        CSeq: \(cseq)\r
+        Content-Length: 0\r
+        \r
+
+        """
     }
 
     // MARK: - Audio wiring during a call
