@@ -161,6 +161,27 @@ struct DialerView: View {
             }
             Toggle("Use SRTP (SDES, AES_CM_128_HMAC_SHA1_80)",
                    isOn: bind(\.useSRTP))
+            Toggle("Send silence RTP while muted",
+                   isOn: Binding(
+                    get: { draft.sendSilenceWhileMuted },
+                    set: { newValue in
+                        if draft.sendSilenceWhileMuted != newValue {
+                            draft.sendSilenceWhileMuted = newValue
+                            hasUnsavedChanges = true
+                        }
+                        // Also push into AppState so an in-flight call
+                        // picks up the change immediately — without this
+                        // the toggle only mattered at placeCall time.
+                        appState.setSendSilenceWhileMuted(newValue)
+                    }
+                   ))
+            if !draft.sendSilenceWhileMuted {
+                Text("With this off, muting halts RTP send entirely — the peer "
+                     + "will see no inbound audio at all (useful for testing "
+                     + "media-timeout behaviour like LiveKit's 15 s rule).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             TextField("SIP server host", text: bind(\.sipHost),
                       prompt: Text("sip.example.com"))
             TextField("SIP port",
@@ -312,7 +333,8 @@ struct DialerView: View {
                         transportKind: p.transportKind,
                         allowSelfSignedTLS: p.allowSelfSignedTLS,
                         useSRTP: p.useSRTP,
-                        customHeaders: p.customHeaders
+                        customHeaders: p.customHeaders,
+                        sendSilenceWhileMuted: p.sendSilenceWhileMuted
                     )
                     appState.upsertProfile(p)
                     appState.selectProfile(p.id)
@@ -340,6 +362,11 @@ struct DialerView: View {
             draft = DialerProfile(name: "New Profile")
             hasUnsavedChanges = true
         }
+        // Push the current draft's "send silence while muted" into AppState
+        // so it's authoritative even when the user never toggles the
+        // switch (e.g. profile loaded from disk with the flag already off,
+        // or call is inbound rather than placed via this view).
+        appState.setSendSilenceWhileMuted(draft.sendSilenceWhileMuted)
     }
 
     // MARK: - Profile import / export

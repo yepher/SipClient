@@ -5,27 +5,34 @@ struct InboundView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Listener status / configuration
-            listenerCard
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-
-            // Pending Answer/Reject prompt — shown only while there's an
-            // unanswered INVITE.
-            if let pending = appState.pendingInbound {
-                pendingCallCard(pending)
+        ScrollView {
+            VStack(spacing: 12) {
+                // Listener status / configuration
+                listenerCard
                     .padding(.horizontal, 16)
-            }
+                    .padding(.top, 12)
 
-            // Active call body — same widgets as outbound (mute, devices,
-            // VU, DTMF, metrics). Hides itself when no call is active.
-            if appState.callInProgress {
-                InCallView()
+                // SSH tunnel for SIP signaling (TCP). Optional; lets the
+                // user expose the listener via a public VPS without
+                // touching their router.
+                sshTunnelCard
                     .padding(.horizontal, 16)
-            }
 
-            Spacer()
+                // Pending Answer/Reject prompt — shown only while there's an
+                // unanswered INVITE.
+                if let pending = appState.pendingInbound {
+                    pendingCallCard(pending)
+                        .padding(.horizontal, 16)
+                }
+
+                // Active call body — same widgets as outbound (mute, devices,
+                // VU, DTMF, metrics). Hides itself when no call is active.
+                if appState.callInProgress {
+                    InCallView()
+                        .padding(.horizontal, 16)
+                }
+            }
+            .padding(.bottom, 16)
         }
         .navigationTitle("Inbound")
     }
@@ -126,6 +133,84 @@ struct InboundView: View {
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
     }
+
+    @ViewBuilder
+    private var sshTunnelCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 12) {
+                Image(systemName: appState.inboundListener.sshIsRunning
+                      ? "lock.shield.fill"
+                      : "lock.shield")
+                    .font(.title2)
+                    .foregroundStyle(appState.inboundListener.sshIsRunning
+                                     ? .green : .secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("SSH reverse tunnel (SIP/TCP)")
+                        .font(.headline)
+                    if appState.inboundListener.sshIsRunning {
+                        Text("Forwarding "
+                             + "\(appState.inboundListener.sshUser)@\(appState.inboundListener.sshHost) "
+                             + ":\(verbatimPort(appState.inboundListener.sshRemoteSIPPort)) "
+                             + "→ local :\(verbatimPort(appState.inboundListener.localPort))")
+                            .font(.caption.monospaced())
+                            .foregroundStyle(.secondary)
+                    } else if let err = appState.inboundListener.sshLastError {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    } else {
+                        Text("Optional — exposes inbound SIP signaling via a public VPS. "
+                             + "RTP still flows directly via STUN.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                if appState.inboundListener.sshIsRunning {
+                    Button("Stop") { appState.inboundListener.stopSSHTunnel() }
+                } else {
+                    Button("Start") { appState.inboundListener.startSSHTunnel() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.green)
+                        .disabled(
+                            appState.inboundListener.sshHost.isEmpty
+                                || appState.inboundListener.sshUser.isEmpty
+                        )
+                }
+            }
+
+            if !appState.inboundListener.sshIsRunning {
+                Form {
+                    Section {
+                        TextField("Host",
+                                  text: stringBind(\.sshHost),
+                                  prompt: Text("vps.example.com"))
+                        TextField("User",
+                                  text: stringBind(\.sshUser),
+                                  prompt: Text("ubuntu"))
+                        TextField("SSH port",
+                                  text: portBind(\.sshPort, default: 22))
+                        TextField("Remote SIP port (the public port on the VPS)",
+                                  text: portBind(\.sshRemoteSIPPort, default: 5060))
+                    }
+                }
+                .formStyle(.grouped)
+            }
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.secondary.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
+        )
+    }
+
+    /// Stringify a UInt16 port without LocalizedStringKey's thousands
+    /// separator getting in the way (`5,060` → `5060`).
+    private func verbatimPort(_ port: UInt16) -> String { String(port) }
 
     @ViewBuilder
     private func pendingCallCard(_ call: InboundCall) -> some View {

@@ -59,6 +59,12 @@ final class AppState: ObservableObject {
     /// list changes (e.g. AirPods connect, USB mic plug/unplug).
     private var deviceListObserver: DeviceListObserver?
 
+    /// Profile setting captured at placeCall — whether muting should
+    /// still emit comfort-silence RTP. False ⇒ muting hard-stops the
+    /// RTP send loop, which is useful for testing the peer's media
+    /// timeout behaviour.
+    private var currentSendSilenceWhileMuted: Bool = true
+
     init() {
         loadAudioLibrary()
         loadProfiles()
@@ -118,6 +124,7 @@ final class AppState: ObservableObject {
         guard !callInProgress else { return }
         callInProgress = true
         callStatus = "Starting…"
+        currentSendSilenceWhileMuted = config.sendSilenceWhileMuted
 
         let metrics = CallMetrics()
         callMetrics = metrics
@@ -181,20 +188,26 @@ final class AppState: ObservableObject {
 
     /// Hook the listener into AppState and start it. Logs failures.
     func startInboundListener() {
-        inboundListener.onIncomingInvite = { [weak self] req, host, port in
+        inboundListener.onIncomingInvite = { [weak self] req, responder in
             Task { @MainActor in
-                self?.handleIncomingInvite(req, sourceHost: host, sourcePort: port)
+                self?.handleIncomingInvite(req, responder: responder)
             }
         }
-        inboundListener.onInDialogRequest = { [weak self] req, host, port in
+        inboundListener.onInDialogRequest = { [weak self] req, responder in
             Task { @MainActor in
                 _ = self?.currentInboundCall?.handleInDialogRequest(
-                    req, from: host, port: port
+                    req, responder: responder
                 )
             }
         }
         inboundListener.onWireLog = { [weak self] entry in
             Task { @MainActor in self?.appendLog(entry) }
+        }
+        inboundListener.sshOnLog = { [weak self] message in
+            Task { @MainActor in
+                self?.appendLog(.init(direction: .sent, kind: .info,
+                                      summary: "ssh: \(message)"))
+            }
         }
         do {
             try inboundListener.start()
@@ -222,13 +235,11 @@ final class AppState: ObservableObject {
     /// stage the call and kick out 100 Trying / 180 Ringing immediately
     /// while the user decides.
     private func handleIncomingInvite(_ req: SIPRequest,
-                                      sourceHost: String, sourcePort: UInt16) {
-        guard let socket = inboundListener.sharedSocket else { return }
-
+                                      responder: @escaping InboundResponder) {
         if callInProgress || pendingInbound != nil || currentInboundCall != nil {
             // Build a quick 486 directly without InboundCall machinery.
             let busy = quickRejectResponse(for: req, code: 486, reason: "Busy Here")
-            try? socket.send(Data(busy.utf8), to: sourceHost, port: sourcePort)
+            responder(Data(busy.utf8))
             appendLog(.init(direction: .sent, kind: .info,
                             summary: "→ 486 Busy Here (already in a call)"))
             return
@@ -268,10 +279,18 @@ final class AppState: ObservableObject {
             publicRTPPort = rtpSocket.localPort
         }
 
+        // Seed "send silence while muted" from the user's currently-
+        // selected dialer profile so muting on an inbound call respects
+        // the saved setting (this state is only otherwise set on
+        // placeCall or via the DialerView toggle).
+        if let p = profile(id: selectedProfileID) {
+            currentSendSilenceWhileMuted = p.sendSilenceWhileMuted
+        }
+
         let call = InboundCall(
             invite: req,
-            sourceHost: sourceHost, sourcePort: sourcePort,
-            socket: socket, rtpSocket: rtpSocket,
+            responder: responder,
+            rtpSocket: rtpSocket,
             publicSIPHost: publicSIPHost, publicSIPPort: publicSIPPort,
             publicRTPHost: publicRTPHost, publicRTPPort: publicRTPPort
         )
@@ -359,6 +378,14 @@ final class AppState: ObservableObject {
         currentRTPSession = rtp
         callConnected = true
         callMetrics?.setPtime(rtp.ptime)
+
+        // Sync the new session's send-suppress flag to the current
+        // (muted, sendSilenceWhileMuted) state. Otherwise, if the user
+        // had already muted before the call connected (or if the state
+        // was set by syncFromSelection / handleIncomingInvite before the
+        // RTPSession existed), the loop would start in send-silence mode
+        // even when "send silence while muted" is off.
+        applySuppressSendForCurrentMuteState()
 
         Task { @MainActor in
             // Start the engine with the mic tap installed BEFORE we let
@@ -472,8 +499,43 @@ final class AppState: ObservableObject {
     var micMuted: Bool { audioEngine.micMuted }
     func toggleMicMuted() {
         audioEngine.toggleMicMuted()
+        applySuppressSendForCurrentMuteState()
+        let muted = audioEngine.micMuted
+        let extra = (muted && !currentSendSilenceWhileMuted) ? " (RTP send halted)" : ""
+        appendLog(.init(
+            direction: .sent, kind: .info,
+            summary: muted ? "Mic muted\(extra)" : "Mic unmuted"
+        ))
+    }
+
+    /// Live update for the "send silence while muted" setting. Called
+    /// from the dialer toggle so a change *during* a call takes effect
+    /// on the active RTPSession immediately, instead of waiting for the
+    /// next placeCall to capture it.
+    func setSendSilenceWhileMuted(_ value: Bool) {
+        currentSendSilenceWhileMuted = value
+        applySuppressSendForCurrentMuteState()
+    }
+
+    /// Push the combined "muted + don't send silence while muted" state
+    /// into the RTPSession so the send loop either keeps emitting comfort
+    /// silence (default) or hard-stops RTP transmission entirely (test
+    /// mode for peer media-timeout behaviour).
+    private func applySuppressSendForCurrentMuteState() {
+        let shouldSuppress = audioEngine.micMuted && !currentSendSilenceWhileMuted
+        guard let rtp = currentRTPSession else {
+            appendLog(.init(direction: .sent, kind: .info,
+                summary: "RTP suppress: no active session "
+                       + "(muted=\(audioEngine.micMuted), "
+                       + "sendSilence=\(currentSendSilenceWhileMuted))"))
+            return
+        }
+        let was = rtp.suppressSend
+        rtp.suppressSend = shouldSuppress
         appendLog(.init(direction: .sent, kind: .info,
-                        summary: audioEngine.micMuted ? "Mic muted" : "Mic unmuted"))
+            summary: "RTP suppress \(was ? "on" : "off") → \(shouldSuppress ? "on" : "off") "
+                   + "(muted=\(audioEngine.micMuted), "
+                   + "sendSilence=\(currentSendSilenceWhileMuted))"))
     }
 
     /// Send DTMF digits over the active call as RFC 4733 events.

@@ -62,6 +62,18 @@ final class RTPSession: @unchecked Sendable {
     private let encoder: CodecEncoder
     private let decoder: CodecDecoder
 
+    /// When true, the audio send loop sends nothing — not even comfort
+    /// silence. Used to deliberately stop RTP flow mid-call (e.g. to
+    /// test the peer's media-timeout behaviour). Driven by AppState
+    /// from the combined "muted" state and the profile's
+    /// `sendSilenceWhileMuted` setting.
+    private let suppressLock = NSLock()
+    private var _suppressSend = false
+    var suppressSend: Bool {
+        get { suppressLock.lock(); defer { suppressLock.unlock() }; return _suppressSend }
+        set { suppressLock.lock(); _suppressSend = newValue; suppressLock.unlock() }
+    }
+
     /// Outbound SRTP context (built from our SDP-offered crypto). Nil
     /// when negotiated profile is plain RTP/AVP.
     private let outboundSRTP: SRTPContext?
@@ -117,6 +129,14 @@ final class RTPSession: @unchecked Sendable {
             while !Task.isCancelled {
                 guard let self else { return }
                 if self.dtmfModeIsActive() {
+                    try? await Task.sleep(nanoseconds: interval)
+                    continue
+                }
+                if self.suppressSend {
+                    // Deliberate hard mute — emit no RTP at all so the
+                    // peer can observe the silence (and trigger any
+                    // media-timeout behaviour). Hold cadence so we
+                    // resume cleanly on unsuppress.
                     try? await Task.sleep(nanoseconds: interval)
                     continue
                 }

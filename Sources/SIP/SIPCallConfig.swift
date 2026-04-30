@@ -39,4 +39,8 @@ struct SIPCallConfig {
 
     /// Arbitrary additional SIP headers injected into outbound INVITEs.
     var customHeaders: [SIPCustomHeader] = []
+
+    /// When true (default), muted mic still sends comfort-silence RTP.
+    /// When false, muting halts RTP flow entirely.
+    var sendSilenceWhileMuted: Bool = true
 }

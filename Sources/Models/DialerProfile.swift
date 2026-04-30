@@ -29,6 +29,12 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// Use SRTP for media (SDES key exchange).
     var useSRTP: Bool = false
 
+    /// When true (default), muting the mic still sends comfort-silence
+    /// RTP so the peer's media path stays open. Turn off to make mute
+    /// stop RTP flow entirely — useful for testing the peer's media-
+    /// timeout behaviour (LiveKit disconnects after 15 s of silence).
+    var sendSilenceWhileMuted: Bool = true
+
     /// Arbitrary additional SIP headers injected into outbound INVITEs.
     /// Empty `name` rows are ignored on the wire.
     var customHeaders: [SIPCustomHeader] = []
@@ -51,7 +57,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         transportKind: SIPTransportKind = .udp,
         allowSelfSignedTLS: Bool = true,
         useSRTP: Bool = false,
-        customHeaders: [SIPCustomHeader] = []
+        customHeaders: [SIPCustomHeader] = [],
+        sendSilenceWhileMuted: Bool = true
     ) {
         self.id = id
         self.name = name
@@ -71,6 +78,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.allowSelfSignedTLS = allowSelfSignedTLS
         self.useSRTP = useSRTP
         self.customHeaders = customHeaders
+        self.sendSilenceWhileMuted = sendSilenceWhileMuted
     }
 
     /// Return a copy of this profile with a freshly-generated UUID.
@@ -116,6 +124,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.useSRTP = (try? c.decode(Bool.self, forKey: .useSRTP)) ?? false
         self.customHeaders = (try? c.decode([SIPCustomHeader].self,
                                             forKey: .customHeaders)) ?? []
+        self.sendSilenceWhileMuted = (try? c.decode(Bool.self,
+                                                    forKey: .sendSilenceWhileMuted)) ?? true
     }
 
     func callConfig(authPassword: String) -> SIPCallConfig {
@@ -135,6 +145,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.allowSelfSignedTLS = allowSelfSignedTLS
         cfg.useSRTP = useSRTP
         cfg.customHeaders = customHeaders
+        cfg.sendSilenceWhileMuted = sendSilenceWhileMuted
         return cfg
     }
 }
