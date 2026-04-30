@@ -21,6 +21,8 @@ final class AppState: ObservableObject {
     /// final summary). UI binds to this for the in-call timing/jitter
     /// display.
     @Published var callMetrics: CallMetrics?
+    /// A `.sipcall` file the user just opened — drives the import sheet.
+    @Published var pendingImport: PendingProfileImport?
 
     @Published var inputDevices: [AudioDevice] = []
     @Published var outputDevices: [AudioDevice] = []
@@ -639,4 +641,55 @@ final class AppState: ObservableObject {
                             summary: "Failed to save clip: \(error.localizedDescription)"))
         }
     }
+
+    // MARK: - Profile import (from double-click)
+
+    /// Called when the user double-clicks a `.sipcall` file in Finder.
+    /// Reads the file off-disk and stages a `PendingProfileImport`,
+    /// which the UI sheet observes.
+    func handleIncomingFile(_ url: URL) {
+        guard url.pathExtension.lowercased() == "sipcall" else { return }
+        // The OS may hand us a security-scoped URL.
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let data = try Data(contentsOf: url)
+            let profile = try SIPCallExport.decode(data: data)
+            pendingImport = PendingProfileImport(
+                sourceURL: url,
+                profile: profile
+            )
+        } catch {
+            appendLog(.init(
+                direction: .sent, kind: .error,
+                summary: "Failed to read \(url.lastPathComponent)",
+                detail: error.localizedDescription
+            ))
+        }
+    }
+
+    /// Commit a pending import after the user has confirmed (and possibly
+    /// renamed) it. The profile keeps its original UUID, so re-importing
+    /// the same file updates the existing entry instead of creating a copy.
+    func confirmPendingImport(profile: DialerProfile) {
+        upsertProfile(profile)
+        selectProfile(profile.id)
+        pendingImport = nil
+        appendLog(.init(
+            direction: .sent, kind: .info,
+            summary: "Imported profile “\(profile.name)”"
+        ))
+    }
+
+    func cancelPendingImport() {
+        pendingImport = nil
+    }
+}
+
+/// Holds an inbound `.sipcall` file the user has opened, until they
+/// confirm (or cancel) the import in the sheet.
+struct PendingProfileImport: Identifiable {
+    let id = UUID()
+    let sourceURL: URL
+    let profile: DialerProfile
 }

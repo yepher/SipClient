@@ -6,6 +6,21 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>SIP Client</string>
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>SIP Client Profile</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.yepher.sipclient.sipcall</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIconName</key>
@@ -21,7 +36,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
-	<string>3</string>
+	<string>4</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>NSBonjourServices</key>
@@ -34,5 +49,30 @@
 	<string>SIP Client communicates with SIP servers and STUN servers on your local network.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>SIP Client needs microphone access to send audio during SIP calls.</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>SIP Client Profile</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.yepher.sipclient.sipcall</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>sipcall</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-sipcall</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

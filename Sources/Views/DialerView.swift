@@ -1,4 +1,6 @@
+import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DialerView: View {
     @EnvironmentObject var appState: AppState
@@ -99,6 +101,20 @@ struct DialerView: View {
                     Label("Save", systemImage: "tray.and.arrow.down")
                 }
                 .disabled(!hasUnsavedChanges || appState.profiles.firstIndex(where: { $0.id == draft.id }) == nil)
+
+                Button {
+                    exportProfile()
+                } label: {
+                    Label("Export", systemImage: "square.and.arrow.up")
+                }
+                .help("Export current profile to a .sipcall file")
+
+                Button {
+                    importProfile()
+                } label: {
+                    Label("Import", systemImage: "square.and.arrow.down")
+                }
+                .help("Import a .sipcall file")
 
                 Button(role: .destructive) {
                     showDeleteConfirm = true
@@ -324,6 +340,56 @@ struct DialerView: View {
             draft = DialerProfile(name: "New Profile")
             hasUnsavedChanges = true
         }
+    }
+
+    // MARK: - Profile import / export
+
+    private func exportProfile() {
+        let panel = NSSavePanel()
+        panel.title = "Export Profile"
+        let safeName = draft.name.replacingOccurrences(of: "/", with: "_")
+        panel.nameFieldStringValue = "\(safeName).sipcall"
+        panel.canCreateDirectories = true
+        if let utType = UTType(filenameExtension: "sipcall") {
+            panel.allowedContentTypes = [utType]
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try SIPCallExport.encode(profile: draft)
+            try data.write(to: url, options: .atomic)
+        } catch {
+            showSavePanelError("Failed to export profile",
+                               message: error.localizedDescription)
+        }
+    }
+
+    private func importProfile() {
+        let panel = NSOpenPanel()
+        panel.title = "Import Profile"
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        if let utType = UTType(filenameExtension: "sipcall") {
+            panel.allowedContentTypes = [utType]
+        }
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            let data = try Data(contentsOf: url)
+            let imported = try SIPCallExport.decode(data: data)
+            appState.upsertProfile(imported)
+            appState.selectProfile(imported.id)
+            syncFromSelection()
+        } catch {
+            showSavePanelError("Failed to import profile",
+                               message: error.localizedDescription)
+        }
+    }
+
+    private func showSavePanelError(_ title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.runModal()
     }
 
     /// Generic binding into the draft profile that flips `hasUnsavedChanges`

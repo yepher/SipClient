@@ -73,6 +73,26 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.customHeaders = customHeaders
     }
 
+    /// Return a copy of this profile with a freshly-generated UUID.
+    /// Used when importing as a new entry instead of overwriting.
+    func withFreshID() -> DialerProfile {
+        DialerProfile(
+            id: UUID(),
+            name: name,
+            sipHost: sipHost, sipPort: sipPort, toURI: toURI,
+            fromUser: fromUser, fromDisplay: fromDisplay,
+            authUser: authUser,
+            useSTUN: useSTUN, stunServer: stunServer,
+            localSIPPort: localSIPPort, localRTPPort: localRTPPort,
+            callDuration: callDuration,
+            codecs: codecs,
+            transportKind: transportKind,
+            allowSelfSignedTLS: allowSelfSignedTLS,
+            useSRTP: useSRTP,
+            customHeaders: customHeaders
+        )
+    }
+
     /// Custom decoder that defaults `codecs` for older saved profiles
     /// that pre-date the field.
     init(from decoder: Decoder) throws {

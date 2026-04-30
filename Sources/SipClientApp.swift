@@ -16,6 +16,9 @@ struct SipClientApp: App {
                     // input AU on the first call after a fresh grant.
                     _ = await AudioEngine.requestMicAuthorization()
                 }
+                .onOpenURL { url in
+                    appState.handleIncomingFile(url)
+                }
         }
         .windowResizability(.contentMinSize)
     }
