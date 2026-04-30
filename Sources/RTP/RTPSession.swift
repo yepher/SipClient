@@ -19,6 +19,9 @@ final class RTPSession: @unchecked Sendable {
     let remotePort: UInt16
     var payloadType: UInt8
     let codec: CodecKind
+    /// Negotiated packet time in milliseconds (from a=ptime in the SDP
+    /// answer, or 20 ms per RFC 3551 default).
+    let ptime: Int
     /// DTMF (telephone-event) payload type from the SDP answer, if any.
     var dtmfPT: UInt8?
 
@@ -41,6 +44,17 @@ final class RTPSession: @unchecked Sendable {
 
     private(set) var packetsSent: UInt64 = 0
     private(set) var packetsReceived: UInt64 = 0
+    /// Number of distinct packets we *should* have seen by now, derived
+    /// from the inbound sequence number range (RFC 3550 §A.3 algorithm).
+    /// `expected - received` is loss; can be negative if the peer
+    /// retransmits (duplicates).
+    private(set) var packetsExpected: UInt64 = 0
+    private(set) var packetsLost: Int64 = 0
+
+    /// First sequence number observed (16-bit, no wrap accounting).
+    private var firstSeq: UInt16?
+    /// Highest extended sequence number observed (32-bit: ROC<<16 | seq).
+    private var maxExtSeq: UInt32 = 0
 
     private var sendTask: Task<Void, Never>?
     private var recvTask: Task<Void, Never>?
@@ -60,6 +74,7 @@ final class RTPSession: @unchecked Sendable {
          remotePort: UInt16,
          payloadType: UInt8,
          codec: CodecKind,
+         ptime: Int = 20,
          outboundCrypto: SDPCryptoLine? = nil,
          inboundCrypto: SDPCryptoLine? = nil) {
         self.socket = socket
@@ -67,6 +82,7 @@ final class RTPSession: @unchecked Sendable {
         self.remotePort = remotePort
         self.payloadType = payloadType
         self.codec = codec
+        self.ptime = ptime
         self.encoder = codec.makeEncoder()
         self.decoder = codec.makeDecoder()
         let randSSRC = UInt32.random(in: 1...UInt32.max)
@@ -258,6 +274,35 @@ final class RTPSession: @unchecked Sendable {
         return _dtmfMode
     }
 
+    /// Maintain `packetsExpected` / `packetsLost` from the inbound
+    /// sequence numbers, handling 16-bit wrap by tracking a rollover
+    /// counter (ROC) baked into a 32-bit "extended" sequence space.
+    private func updateLossStats(seq: UInt16) {
+        guard let first = firstSeq else {
+            firstSeq = seq
+            maxExtSeq = UInt32(seq)
+            packetsExpected = 1
+            packetsLost = 0
+            return
+        }
+        let prevLow = UInt16(maxExtSeq & 0xFFFF)
+        let roc = maxExtSeq >> 16
+        let extSeq: UInt32
+        if seq < prevLow && (UInt32(prevLow) - UInt32(seq)) > 32768 {
+            // Forward wrap: new packet from next ROC epoch.
+            extSeq = ((roc &+ 1) << 16) | UInt32(seq)
+        } else if seq > prevLow && (UInt32(seq) - UInt32(prevLow)) > 32768 && roc > 0 {
+            // Late arrival from the previous epoch.
+            extSeq = ((roc &- 1) << 16) | UInt32(seq)
+        } else {
+            extSeq = (roc << 16) | UInt32(seq)
+        }
+        if extSeq > maxExtSeq { maxExtSeq = extSeq }
+        let baseExt = UInt32(first)  // first didn't see any wrap
+        packetsExpected = UInt64(maxExtSeq &- baseExt) + 1
+        packetsLost = Int64(packetsExpected) - Int64(packetsReceived)
+    }
+
     private func handleRTPPacket(_ data: Data) {
         // Decrypt + verify if inbound SRTP is configured. We learn the
         // peer's SSRC from the first packet; the SDP-negotiated keys
@@ -290,6 +335,7 @@ final class RTPSession: @unchecked Sendable {
         guard rtp.count > payloadStart else { return }
         let payload = rtp.subdata(in: payloadStart..<rtp.count)
         packetsReceived &+= 1
+        updateLossStats(seq: seq)
 
         if let dtmfPT, pt == dtmfPT {
             onTelephoneEvent?(payload.first ?? 0, seq)

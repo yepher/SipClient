@@ -44,6 +44,10 @@ enum SDP {
         var dtmfPT: UInt8?
         /// Peer's SDES crypto context if the answer enabled SRTP.
         var crypto: SDPCryptoLine?
+        /// Negotiated packet time in milliseconds (RFC 4566 a=ptime).
+        /// Defaults to 20 ms per RFC 3551 if the answer didn't include
+        /// the attribute.
+        var ptime: Int = 20
     }
 
     static func parseAnswer(_ body: String) -> Answer {
@@ -71,6 +75,12 @@ enum SDP {
                 if ans.crypto == nil {
                     let value = String(line.dropFirst("a=crypto:".count))
                     ans.crypto = SDPCryptoLine.parse(value)
+                }
+            } else if line.hasPrefix("a=ptime:") {
+                let raw = line.dropFirst("a=ptime:".count)
+                if let n = Int(raw.trimmingCharacters(in: .whitespaces)),
+                   n > 0 {
+                    ans.ptime = n
                 }
             }
         }

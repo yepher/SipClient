@@ -17,6 +17,10 @@ final class AppState: ObservableObject {
     @Published var runningScenarioID: UUID?
     @Published var currentScenarioStep: Int?
     @Published var rtpStats: String = ""
+    /// Per-call metrics (created at placeCall, kept around for the
+    /// final summary). UI binds to this for the in-call timing/jitter
+    /// display.
+    @Published var callMetrics: CallMetrics?
 
     @Published var inputDevices: [AudioDevice] = []
     @Published var outputDevices: [AudioDevice] = []
@@ -100,6 +104,9 @@ final class AppState: ObservableObject {
         callInProgress = true
         callStatus = "Starting…"
 
+        let metrics = CallMetrics()
+        callMetrics = metrics
+
         let call = SIPCall(config: config)
         currentCall = call
 
@@ -108,6 +115,15 @@ final class AppState: ObservableObject {
         }
         call.onStatus = { s in
             Task { @MainActor in self.callStatus = s }
+        }
+        call.onInviteSent = {
+            Task { @MainActor in metrics.recordInvite() }
+        }
+        call.onProvisional = { status in
+            Task { @MainActor in metrics.recordResponse(status: status) }
+        }
+        call.onAnswered = {
+            Task { @MainActor in metrics.recordResponse(status: 200) }
         }
         call.onMediaReady = { rtpSession in
             Task { @MainActor in self.attachAudio(to: rtpSession) }
@@ -148,6 +164,7 @@ final class AppState: ObservableObject {
         rtp.micBuffer = callMicBuffer
         currentRTPSession = rtp
         callConnected = true
+        callMetrics?.setPtime(rtp.ptime)
 
         Task { @MainActor in
             // Start the engine with the mic tap installed BEFORE we let
@@ -175,9 +192,18 @@ final class AppState: ObservableObject {
             // Now wire up RTP receive → playback. By the time the first
             // RTP packet hits this callback, the engine is already
             // running with both input and output configured.
-            rtp.onPlaybackPCM = { samples in
+            rtp.onPlaybackPCM = { [weak self] samples in
+                guard let self else { return }
                 self.audioEngine.levelMeter.recordRecv(samples)
+                // Compute peak for first-audio detection + jitter math.
+                var peak: Int32 = 0
+                for s in samples {
+                    let v = Int32(s)
+                    let absV = v < 0 ? -v : v
+                    if absV > peak { peak = absV }
+                }
                 Task { @MainActor in
+                    self.callMetrics?.recordPacket(peak: peak)
                     self.audioEngine.enqueuePlayback(samples: samples)
                 }
             }
@@ -185,14 +211,41 @@ final class AppState: ObservableObject {
 
         rtpStatsTask = Task.detached { [weak rtp] in
             while !Task.isCancelled, let r = rtp {
-                let s = "RTP sent=\(r.packetsSent) recv=\(r.packetsReceived)"
-                await MainActor.run { self.rtpStats = s }
+                let sent = r.packetsSent
+                let recv = r.packetsReceived
+                let expected = r.packetsExpected
+                let lost = r.packetsLost
+                let lossPct: Double = expected > 0
+                    ? Double(max(Int64(0), lost)) / Double(expected) * 100
+                    : 0
+                let s: String
+                if expected > 0 {
+                    s = String(
+                        format: "RTP sent=%llu recv=%llu lost=%lld (%.2f%%)",
+                        sent, recv, lost, lossPct
+                    )
+                } else {
+                    s = "RTP sent=\(sent) recv=\(recv)"
+                }
+                await MainActor.run {
+                    self.rtpStats = s
+                    self.callMetrics?.updateLossCounts(
+                        expected: expected,
+                        received: recv,
+                        lost: lost
+                    )
+                }
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
         }
     }
 
     private func detachAudio() {
+        if let metrics = callMetrics {
+            appendLog(.init(direction: .sent, kind: .info,
+                            summary: metrics.summaryLine,
+                            detail: metrics.summaryDetail))
+        }
         callMicBuffer.clear()
         audioEngine.stopCallMode()
         rtpStatsTask?.cancel()

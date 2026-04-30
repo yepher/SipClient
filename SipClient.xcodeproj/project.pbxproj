@@ -24,6 +24,7 @@
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
 		B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C5DA24C5E19148C27D46D /* WireLogEntry.swift */; };
 		B30872CEF972812BD7BFAA28 /* SIPCustomHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */; };
+		B40983DFA083923CE8C0BB39 /* CallMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828E7FC46E703B36AE49F68F /* CallMetrics.swift */; };
 		B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091382AF4736A88FFCA6EB39 /* SDP.swift */; };
 		B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */; };
 		BFF4857501F381DE543C14E8 /* InCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B44EE494E591B8E7A59BDB /* InCallView.swift */; };
@@ -58,6 +59,7 @@
 		616C5DA24C5E19148C27D46D /* WireLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogEntry.swift; sourceTree = "<group>"; };
 		64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerProfile.swift; sourceTree = "<group>"; };
 		717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCustomHeader.swift; sourceTree = "<group>"; };
+		828E7FC46E703B36AE49F68F /* CallMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMetrics.swift; sourceTree = "<group>"; };
 		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
 		77B44EE494E591B8E7A59BDB /* InCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InCallView.swift; sourceTree = "<group>"; };
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
@@ -120,6 +122,7 @@
 			isa = PBXGroup;
 			children = (
 				F9CEBEB471B82F2FA682B890 /* AudioClip.swift */,
+				828E7FC46E703B36AE49F68F /* CallMetrics.swift */,
 				64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */,
 				CC8A56B48A1B633CCCD04662 /* Scenario.swift */,
 				717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */,
@@ -313,6 +316,7 @@
 				FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */,
 				B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */,
 				B30872CEF972812BD7BFAA28 /* SIPCustomHeader.swift in Sources */,
+				B40983DFA083923CE8C0BB39 /* CallMetrics.swift in Sources */,
 				3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -20,7 +20,6 @@ struct SIPCallConfig {
     var authPassword: String = ""
 
     var answerTimeout: TimeInterval = 30
-    var callDuration: TimeInterval = 30  // seconds to keep the call up after answer
 
     /// Audio codecs to advertise in the SDP offer, in preference order.
     /// The peer's answer picks one. Defaults to PCMU + PCMA for maximum

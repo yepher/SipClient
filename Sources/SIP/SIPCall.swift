@@ -28,6 +28,15 @@ final class SIPCall: @unchecked Sendable {
     var onWireLog: (@Sendable (WireLogEntry) -> Void)?
     var onStatus: (@Sendable (String) -> Void)?
 
+    /// Fires the moment the first INVITE byte is on the wire. Callers
+    /// use this as `t0` for call-timing metrics.
+    var onInviteSent: (@Sendable () -> Void)?
+    /// Fires for every 1xx (provisional) response — most importantly
+    /// 100 Trying and 180 Ringing.
+    var onProvisional: (@Sendable (Int) -> Void)?
+    /// Fires when the 200 OK to the INVITE arrives (call answered).
+    var onAnswered: (@Sendable () -> Void)?
+
     /// Fires once the call is answered and the RTP session is created.
     /// AppState uses this to wire mic capture and speaker playback.
     var onMediaReady: (@Sendable (RTPSession) -> Void)?
@@ -53,6 +62,7 @@ final class SIPCall: @unchecked Sendable {
     private(set) var remoteRTPPort: UInt16 = 0
     private(set) var negotiatedPT: UInt8 = 0
     private(set) var negotiatedCodec: CodecKind = .pcmu
+    private(set) var negotiatedPtime: Int = 20
     private(set) var negotiatedDTMFPT: UInt8?
 
     /// Our SDES offer (used to encrypt outbound RTP). Generated once
@@ -148,6 +158,7 @@ final class SIPCall: @unchecked Sendable {
         emitStatus("Sending INVITE…")
         recordSent(method: "INVITE", raw: invite)
         try transport.send(Data(invite.utf8))
+        onInviteSent?()
 
         let T1: TimeInterval = 0.5
         var retransmitInterval = T1
@@ -186,6 +197,7 @@ final class SIPCall: @unchecked Sendable {
             if (100...199).contains(status) {
                 provisionalReceived = true
                 emitStatus("\(status) \(resp.statusText)")
+                onProvisional?(status)
             }
             if toTag.isEmpty,
                let to = resp.firstHeader("to"),
@@ -228,6 +240,7 @@ final class SIPCall: @unchecked Sendable {
                 remoteRTPPort = ans.remotePort
                 negotiatedPT = ans.audioPT
                 negotiatedCodec = ans.codec
+                negotiatedPtime = ans.ptime
                 negotiatedDTMFPT = ans.dtmfPT
                 inboundCrypto = ans.crypto
 
@@ -236,6 +249,7 @@ final class SIPCall: @unchecked Sendable {
                 try transport.send(Data(ack.utf8))
 
                 answered = true
+                onAnswered?()
                 emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT) codec=\(negotiatedCodec.rtpmapName)")
 
             default:
@@ -277,6 +291,7 @@ final class SIPCall: @unchecked Sendable {
                                     remotePort: remoteRTPPort,
                                     payloadType: negotiatedPT,
                                     codec: negotiatedCodec,
+                                    ptime: negotiatedPtime,
                                     outboundCrypto: outCrypto,
                                     inboundCrypto: inCrypto)
         rtpSession.dtmfPT = negotiatedDTMFPT
@@ -288,8 +303,9 @@ final class SIPCall: @unchecked Sendable {
             onMediaEnd?()
         }
 
-        let callEnd = Date().addingTimeInterval(cfg.callDuration)
-        while !hungup && Date() < callEnd && !hangupRequested {
+        // Stay in the call until the remote sends BYE or the user hits
+        // Hang up. There's no client-side timeout.
+        while !hungup && !hangupRequested {
             let receivedData: Data?
             do {
                 receivedData = try transport.recvMessage(timeout: 0.25)

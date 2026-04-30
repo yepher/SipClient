@@ -1,3 +1,4 @@
+import Charts
 import CoreAudio
 import SwiftUI
 
@@ -105,7 +106,7 @@ struct InCallView: View {
             }
             .frame(maxWidth: 240)
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(appState.rtpStats.isEmpty ? "RTP …" : appState.rtpStats)
                     .font(.caption)
                     .monospaced()
@@ -115,8 +116,134 @@ struct InCallView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                if let metrics = appState.callMetrics {
+                    metricsRow(metrics)
+                    arrivalChart(metrics)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    @ViewBuilder
+    private func metricsRow(_ metrics: CallMetrics) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Time to first (from INVITE)")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            HStack(spacing: 16) {
+                metricBadge(label: "100", ms: metrics.msFromInvite(to: metrics.tryingAt))
+                metricBadge(label: "180", ms: metrics.msFromInvite(to: metrics.ringingAt))
+                metricBadge(label: "200", ms: metrics.msFromInvite(to: metrics.answeredAt))
+                metricBadge(label: "Audio", ms: metrics.msFromInvite(to: metrics.firstAudioAt))
+                lossBadge(metrics)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func lossBadge(_ metrics: CallMetrics) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("Loss")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            if metrics.packetsExpected == 0 {
+                Text("—")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+            } else {
+                Text(String(format: "%.2f%%", metrics.lossPercent))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(metrics.lossPercent > 1.0 ? .red : .primary)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func metricBadge(label: String, ms: Int?) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(label)
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            Text(ms.map { "\($0) ms" } ?? "—")
+                .font(.caption.monospaced())
+                .foregroundStyle(ms == nil ? .secondary : .primary)
+        }
+    }
+
+    @ViewBuilder
+    private func arrivalChart(_ metrics: CallMetrics) -> some View {
+        if metrics.samples.isEmpty {
+            Text("RTP arrival graph (last 10 s) — waiting for packets…")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+        } else {
+            VStack(alignment: .leading, spacing: 2) {
+                // Delta — top chart. Hide X axis labels; the bottom
+                // chart's X axis serves both since they share the time
+                // window.
+                Text("Δ inter-arrival (ms) — ideal \(Int(metrics.nominalDeltaMs)) ms (a=ptime)")
+                    .font(.caption2)
+                    .foregroundStyle(.blue)
+                Chart {
+                    // Reference line at the SDP-negotiated a=ptime
+                    // (RFC 4566). Same y-value label as the LineMark so
+                    // both end up on a single shared y-axis.
+                    RuleMark(y: .value("Delta (ms)", metrics.nominalDeltaMs))
+                        .foregroundStyle(.green.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    ForEach(metrics.samples) { sample in
+                        LineMark(
+                            x: .value("Time", sample.at),
+                            y: .value("Delta (ms)", sample.deltaMs)
+                        )
+                        .foregroundStyle(.blue)
+                    }
+                }
+                // Cap the y-axis so the ptime reference sits ~1/3 from
+                // the bottom and stays clearly distinct from y=0 even
+                // when spikes occur. Spikes above the cap are visually
+                // clipped, which is fine — the line going off the top
+                // is still a clear "spike" signal.
+                .chartYScale(domain: 0 ... max(metrics.nominalDeltaMs * 3, 60))
+                .chartYAxis { AxisMarks(position: .leading) }
+                .chartXAxis(.hidden)
+                .frame(height: 50)
+
+                // Jitter — bottom chart, separate Y scale.
+                Text("Jitter (ms) — ideal 0 ms")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                Chart {
+                    // Reference line at zero jitter — the floor we'd
+                    // see on a perfectly-paced arrival stream.
+                    RuleMark(y: .value("Jitter (ms)", 0.0))
+                        .foregroundStyle(.green.opacity(0.6))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                    ForEach(metrics.samples) { sample in
+                        LineMark(
+                            x: .value("Time", sample.at),
+                            y: .value("Jitter (ms)", sample.jitterMs)
+                        )
+                        .foregroundStyle(.orange)
+                    }
+                }
+                // Floor the upper bound at 30 ms so a quiet stream
+                // doesn't squish jitter to invisibility against the
+                // y=0 reference line.
+                .chartYScale(
+                    domain: 0 ... max(30, (metrics.samples.map(\.jitterMs).max() ?? 0) * 1.2)
+                )
+                .chartYAxis { AxisMarks(position: .leading) }
+                .chartXAxis {
+                    AxisMarks(values: .automatic(desiredCount: 4)) { _ in
+                        AxisGridLine()
+                        AxisTick()
+                        AxisValueLabel(format: .dateTime.minute().second())
+                    }
+                }
+                .frame(height: 50)
+            }
         }
     }
 

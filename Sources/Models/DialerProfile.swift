@@ -110,7 +110,6 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.stunServer = stunServer
         cfg.localSIPPort = localSIPPort
         cfg.localRTPPort = localRTPPort
-        cfg.callDuration = callDuration
         cfg.codecs = codecs.isEmpty ? [.pcmu, .pcma] : codecs
         cfg.transportKind = transportKind
         cfg.allowSelfSignedTLS = allowSelfSignedTLS

@@ -188,10 +188,6 @@ struct DialerView: View {
                       text: portBind(\.localSIPPort, default: 5060))
             TextField("Local RTP port",
                       text: portBind(\.localRTPPort, default: 10000))
-            HStack {
-                Text("Call duration after answer: \(Int(draft.callDuration))s")
-                Slider(value: bind(\.callDuration), in: 5...300, step: 5)
-            }
         }
     }
 
