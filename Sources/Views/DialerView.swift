@@ -30,6 +30,7 @@ struct DialerView: View {
                 natSection
                 localSection
                 codecSection
+                customHeadersSection
                 placeCallSection
             }
             .formStyle(.grouped)
@@ -213,6 +214,58 @@ struct DialerView: View {
     }
 
     @ViewBuilder
+    private var customHeadersSection: some View {
+        Section("Custom SIP headers (added to INVITE)") {
+            ForEach(draft.customHeaders) { header in
+                HStack(spacing: 6) {
+                    TextField("Name", text: customHeaderBinding(id: header.id, keyPath: \.name),
+                              prompt: Text("X-Custom-Header"))
+                        .frame(maxWidth: .infinity)
+                    TextField("Value", text: customHeaderBinding(id: header.id, keyPath: \.value),
+                              prompt: Text("value"))
+                        .frame(maxWidth: .infinity)
+                    Button {
+                        draft.customHeaders.removeAll { $0.id == header.id }
+                        hasUnsavedChanges = true
+                    } label: {
+                        Image(systemName: "minus.circle")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Remove header")
+                }
+            }
+            Button {
+                draft.customHeaders.append(SIPCustomHeader())
+                hasUnsavedChanges = true
+            } label: {
+                Label("Add header", systemImage: "plus")
+            }
+            .buttonStyle(.bordered)
+        }
+    }
+
+    /// Two-way binding into `draft.customHeaders[id].keyPath` that flips
+    /// `hasUnsavedChanges` on every edit. Avoids `ForEach($collection)`'s
+    /// constraint that the collection itself be a Binding.
+    private func customHeaderBinding(
+        id: UUID,
+        keyPath: WritableKeyPath<SIPCustomHeader, String>
+    ) -> Binding<String> {
+        Binding(
+            get: {
+                draft.customHeaders.first(where: { $0.id == id })?[keyPath: keyPath] ?? ""
+            },
+            set: { newValue in
+                if let idx = draft.customHeaders.firstIndex(where: { $0.id == id }),
+                   draft.customHeaders[idx][keyPath: keyPath] != newValue {
+                    draft.customHeaders[idx][keyPath: keyPath] = newValue
+                    hasUnsavedChanges = true
+                }
+            }
+        )
+    }
+
+    @ViewBuilder
     private var placeCallSection: some View {
         Section {
             HStack {
@@ -266,7 +319,8 @@ struct DialerView: View {
                         codecs: p.codecs,
                         transportKind: p.transportKind,
                         allowSelfSignedTLS: p.allowSelfSignedTLS,
-                        useSRTP: p.useSRTP
+                        useSRTP: p.useSRTP,
+                        customHeaders: p.customHeaders
                     )
                     appState.upsertProfile(p)
                     appState.selectProfile(p.id)

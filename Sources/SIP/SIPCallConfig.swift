@@ -37,4 +37,7 @@ struct SIPCallConfig {
     /// offer's m= line uses RTP/SAVP and an a=crypto: line carries the
     /// master key. Only AES_CM_128_HMAC_SHA1_80 is supported.
     var useSRTP: Bool = false
+
+    /// Arbitrary additional SIP headers injected into outbound INVITEs.
+    var customHeaders: [SIPCustomHeader] = []
 }

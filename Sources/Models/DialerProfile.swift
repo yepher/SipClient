@@ -29,6 +29,10 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// Use SRTP for media (SDES key exchange).
     var useSRTP: Bool = false
 
+    /// Arbitrary additional SIP headers injected into outbound INVITEs.
+    /// Empty `name` rows are ignored on the wire.
+    var customHeaders: [SIPCustomHeader] = []
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -46,7 +50,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         codecs: [CodecKind] = [.pcmu, .pcma],
         transportKind: SIPTransportKind = .udp,
         allowSelfSignedTLS: Bool = true,
-        useSRTP: Bool = false
+        useSRTP: Bool = false,
+        customHeaders: [SIPCustomHeader] = []
     ) {
         self.id = id
         self.name = name
@@ -65,6 +70,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.transportKind = transportKind
         self.allowSelfSignedTLS = allowSelfSignedTLS
         self.useSRTP = useSRTP
+        self.customHeaders = customHeaders
     }
 
     /// Custom decoder that defaults `codecs` for older saved profiles
@@ -88,6 +94,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.transportKind = (try? c.decode(SIPTransportKind.self, forKey: .transportKind)) ?? .udp
         self.allowSelfSignedTLS = (try? c.decode(Bool.self, forKey: .allowSelfSignedTLS)) ?? true
         self.useSRTP = (try? c.decode(Bool.self, forKey: .useSRTP)) ?? false
+        self.customHeaders = (try? c.decode([SIPCustomHeader].self,
+                                            forKey: .customHeaders)) ?? []
     }
 
     func callConfig(authPassword: String) -> SIPCallConfig {
@@ -107,6 +115,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.transportKind = transportKind
         cfg.allowSelfSignedTLS = allowSelfSignedTLS
         cfg.useSRTP = useSRTP
+        cfg.customHeaders = customHeaders
         return cfg
     }
 }

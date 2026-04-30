@@ -345,6 +345,25 @@ final class SIPCall: @unchecked Sendable {
         return "Via: SIP/2.0/\(proto) \(publicSIPIP):\(publicSIPPort);branch=\(branch)\(suffix)"
     }
 
+    /// Serialised user-defined headers ready to drop into a request,
+    /// each terminated with CRLF. Skips empty rows. Header names get a
+    /// quick sanitise — strip CR/LF/colon — so a malformed entry can't
+    /// inject spurious headers.
+    private func customHeadersBlock() -> String {
+        var s = ""
+        for h in config.customHeaders where h.isReadyToSend {
+            let cleanName = h.name.replacingOccurrences(of: "\r", with: "")
+                .replacingOccurrences(of: "\n", with: "")
+                .replacingOccurrences(of: ":", with: "")
+                .trimmingCharacters(in: .whitespaces)
+            let cleanValue = h.value.replacingOccurrences(of: "\r", with: "")
+                .replacingOccurrences(of: "\n", with: "")
+            guard !cleanName.isEmpty else { continue }
+            s += "\(cleanName): \(cleanValue)\r\n"
+        }
+        return s
+    }
+
     private func buildInvite() -> String {
         let cfg = config
         let toURI = cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI
@@ -370,6 +389,7 @@ final class SIPCall: @unchecked Sendable {
         s += "Content-Type: application/sdp\r\n"
         s += "Allow: INVITE, ACK, BYE, CANCEL\r\n"
         s += "User-Agent: SIPClient-macOS/0.1.0\r\n"
+        s += customHeadersBlock()
         s += "Content-Length: \(sdp.utf8.count)\r\n"
         s += "\r\n"
         s += sdp
@@ -425,6 +445,7 @@ final class SIPCall: @unchecked Sendable {
         s += "Content-Type: application/sdp\r\n"
         s += "Allow: INVITE, ACK, BYE, CANCEL\r\n"
         s += "User-Agent: SIPClient-macOS/0.1.0\r\n"
+        s += customHeadersBlock()
         s += "Content-Length: \(sdp.utf8.count)\r\n"
         s += "\r\n"
         s += sdp
