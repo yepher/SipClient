@@ -17,11 +17,16 @@ struct DialerView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            if appState.callInProgress {
-                InCallView()
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-            }
+            InCallView(
+                onPlaceCall: {
+                    let cfg = draft.callConfig(authPassword: authPassword)
+                    appState.placeCall(config: cfg)
+                },
+                placeCallDisabled: draft.sipHost.isEmpty || draft.toURI.isEmpty
+            )
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+
             Form {
                 profileSection
                 targetSection
@@ -31,7 +36,6 @@ struct DialerView: View {
                 localSection
                 codecSection
                 customHeadersSection
-                placeCallSection
             }
             .formStyle(.grouped)
             .padding()
@@ -72,6 +76,12 @@ struct DialerView: View {
                 }
                 .labelsHidden()
                 .frame(maxWidth: 320)
+
+                if hasUnsavedChanges {
+                    Text("Unsaved changes")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
 
                 Spacer()
 
@@ -263,36 +273,6 @@ struct DialerView: View {
                 }
             }
         )
-    }
-
-    @ViewBuilder
-    private var placeCallSection: some View {
-        Section {
-            HStack {
-                if appState.callInProgress {
-                    Button("Hang up", role: .destructive) {
-                        appState.hangup()
-                    }
-                } else {
-                    Button("Place Call") {
-                        let cfg = draft.callConfig(authPassword: authPassword)
-                        appState.placeCall(config: cfg)
-                    }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(draft.sipHost.isEmpty || draft.toURI.isEmpty)
-                }
-                Spacer()
-                if hasUnsavedChanges {
-                    Text("Unsaved changes")
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                }
-                Text(appState.callStatus)
-                    .foregroundStyle(.secondary)
-                    .monospaced()
-                    .lineLimit(2)
-            }
-        }
     }
 
     @ViewBuilder

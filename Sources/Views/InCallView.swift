@@ -4,57 +4,23 @@ import SwiftUI
 struct InCallView: View {
     @EnvironmentObject var appState: AppState
 
+    /// Tapped to start a new call when idle. When nil the Place Call
+    /// button is hidden (e.g. inbound-only view).
+    var onPlaceCall: (() -> Void)? = nil
+    /// Disables the Place Call button (e.g. when the dialer profile
+    /// hasn't filled in a target host / URI yet).
+    var placeCallDisabled: Bool = false
+
+    @State private var collapsed = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Image(systemName: appState.callConnected
-                      ? "phone.connection.fill"
-                      : "phone.arrow.up.right")
-                    .font(.title2)
-                    .foregroundStyle(appState.callConnected ? .green : .orange)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(appState.callConnected ? "In Call" : "Calling…")
-                        .font(.headline)
-                    Text(appState.callStatus)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+            header
+            if !collapsed {
+                audioDeviceRow
+                if appState.callInProgress {
+                    callDetails
                 }
-                Spacer()
-                Button("Hang up", role: .destructive) {
-                    appState.hangup()
-                }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut(.escape)
-            }
-
-            audioDeviceRow
-
-            HStack(alignment: .bottom, spacing: 12) {
-                VUMeter(level: appState.audioEngine.sendLevel,
-                        label: "Send", color: .blue)
-                VUMeter(level: appState.audioEngine.recvLevel,
-                        label: "Recv", color: .green)
-            }
-
-            HStack(alignment: .top, spacing: 12) {
-                DTMFKeypad { digit in
-                    appState.sendDTMF(String(digit))
-                }
-                .frame(maxWidth: 240)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(appState.rtpStats.isEmpty ? "RTP …" : appState.rtpStats)
-                        .font(.caption)
-                        .monospaced()
-                        .foregroundStyle(.secondary)
-                    if !appState.callConnected {
-                        Text("Waiting for answer — DTMF not available yet.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(14)
@@ -66,6 +32,92 @@ struct InCallView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private var header: some View {
+        HStack(spacing: 12) {
+            Image(systemName: stateIcon)
+                .font(.title2)
+                .foregroundStyle(stateIconColor)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(stateTitle)
+                    .font(.headline)
+                Text(appState.callStatus.isEmpty ? "Idle" : appState.callStatus)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            Spacer()
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) { collapsed.toggle() }
+            } label: {
+                Image(systemName: collapsed ? "chevron.down" : "chevron.up")
+            }
+            .buttonStyle(.borderless)
+            .help(collapsed ? "Expand" : "Collapse")
+
+            if appState.callInProgress {
+                Button("Hang up", role: .destructive) {
+                    appState.hangup()
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.escape)
+            } else if let onPlaceCall {
+                Button("Place Call") {
+                    onPlaceCall()
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.green)
+                .disabled(placeCallDisabled)
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+    }
+
+    private var stateIcon: String {
+        guard appState.callInProgress else { return "phone" }
+        return appState.callConnected ? "phone.connection.fill" : "phone.arrow.up.right"
+    }
+
+    private var stateIconColor: Color {
+        guard appState.callInProgress else { return .secondary }
+        return appState.callConnected ? .green : .orange
+    }
+
+    private var stateTitle: String {
+        guard appState.callInProgress else { return "Ready" }
+        return appState.callConnected ? "In Call" : "Calling…"
+    }
+
+    @ViewBuilder
+    private var callDetails: some View {
+        HStack(alignment: .bottom, spacing: 12) {
+            VUMeter(level: appState.audioEngine.sendLevel,
+                    label: "Send", color: .blue)
+            VUMeter(level: appState.audioEngine.recvLevel,
+                    label: "Recv", color: .green)
+        }
+
+        HStack(alignment: .top, spacing: 12) {
+            DTMFKeypad { digit in
+                appState.sendDTMF(String(digit))
+            }
+            .frame(maxWidth: 240)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(appState.rtpStats.isEmpty ? "RTP …" : appState.rtpStats)
+                    .font(.caption)
+                    .monospaced()
+                    .foregroundStyle(.secondary)
+                if !appState.callConnected {
+                    Text("Waiting for answer — DTMF not available yet.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     @ViewBuilder
