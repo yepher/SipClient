@@ -7,6 +7,29 @@
         <language>en</language>
         <!-- bin/update_appcast.py inserts <item> entries above this line. -->
         <item>
+            <title>Version 0.1.0-b10</title>
+            <pubDate>Fri, 01 May 2026 16:24:49 +0000</pubDate>
+            <sparkle:shortVersionString>0.1.0-b10</sparkle:shortVersionString>
+            <sparkle:version>30</sparkle:version>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h2>What&rsquo;s new in 0.1.0-b10</h2>
+<ul>
+    <li>
+        <strong>In-app updates.</strong> SipClient now checks for new
+        releases automatically and offers to download and install them
+        for you. You can also trigger a check manually from
+        <em>SipClient &rarr; Check for Updates&hellip;</em>
+    </li>
+</ul>
+<p>
+    Updates are signed end-to-end (Apple notarization plus a Sparkle
+    EdDSA signature). If verification ever fails, the update is
+    refused &mdash; you&rsquo;ll never end up running a tampered
+    build.
+</p>]]></description>
+            <enclosure url="https://github.com/yepher/SipClient/releases/download/release_0_1_0_b10/SipClient-0.1.0-b10.zip" length="5143447" type="application/octet-stream" sparkle:edSignature="v6RgS1XO7zku1rVhzV231ifJDm+sntW59bhvNhnPnCbWqMcu6V5dLQl1KfX/VuXH2ORAgiOalG5o6JSVRFUBBw=="/>
+        </item>
+        <item>
             <title>Version 0.1.0-b9</title>
             <pubDate>Fri, 01 May 2026 15:44:09 +0000</pubDate>
             <sparkle:shortVersionString>0.1.0-b9</sparkle:shortVersionString>
