@@ -1,2 +1,9 @@
 .claude
 SipClient.xcodeproj/project.xcworkspace/xcuserdata/chriswilson.xcuserdatad
+
+# Release pipeline output.
+build/
+
+# Local secrets — should never be committed.
+*.sparkle.key
+sipclient-release.env

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/" version="2.0">
+    <channel>
+        <title>SipClient Updates</title>
+        <link>https://github.com/yepher/SipClient</link>
+        <description>Most recent SipClient updates.</description>
+        <language>en</language>
+        <!-- bin/update_appcast.py inserts <item> entries above this line. -->
+        <item>
+            <title>Version 0.1.0-b8</title>
+            <pubDate>Fri, 01 May 2026 15:15:44 +0000</pubDate>
+            <sparkle:shortVersionString>0.1.0-b8</sparkle:shortVersionString>
+            <sparkle:version>27</sparkle:version>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[Test Release]]></description>
+            <enclosure url="https://github.com/yepher/SipClient/releases/download/release_0_1_0_b8/SipClient-0.1.0-b8.zip" length="5143440" type="application/octet-stream" sparkle:edSignature="vpUBp6TzpdxRZw+1FOfoQ8/BYKItiLgRyEcDRL8VO8FGfdeFYkUs75R0XEEIxSrMRPEKqiK7F+ZURaF/tncFDA=="/>
+        </item>
+    </channel>
+</rss>

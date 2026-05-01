@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AA01AA01AA01AA01AA01AA01 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 128BF8762FA4F484006AD146 /* Sparkle */; };
 		11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */; };
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
 		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
@@ -41,6 +42,7 @@
 		D49A264EF78E3B699591B6EF /* G711.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4920A5B0B76F41B91A524FBD /* G711.swift */; };
 		E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1020304050607080A0B0C0D /* SIPTransport.swift */; };
 		E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2030405060708090A0B0C0E /* StreamSIPTransport.swift */; };
+		E55E55E55E55E55E55E55E55 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F66F66F66F66F66F66F66F66 /* UpdateController.swift */; };
 		E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3FD7D41D5B05E05D014C3E /* DialerView.swift */; };
 		E8C7A32B4A52557E427BCCE2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8C1347B0C933674A442AAAD /* Assets.xcassets */; };
 		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
@@ -93,6 +95,7 @@
 		EE6F1B5011F182DC913B3203 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
 		F2030405060708090A0B0C0E /* StreamSIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSIPTransport.swift; sourceTree = "<group>"; };
+		F66F66F66F66F66F66F66F66 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SipClient.entitlements; sourceTree = "<group>"; };
 		F985791C1644D7A2C7699027 /* SIPCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCall.swift; sourceTree = "<group>"; };
 		F9CEBEB471B82F2FA682B890 /* AudioClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClip.swift; sourceTree = "<group>"; };
@@ -184,6 +187,7 @@
 				93CBEEEE944B5F904E5DC7DB /* Info.plist */,
 				F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */,
 				766643A131738D6EF1467CA3 /* SipClientApp.swift */,
+				F66F66F66F66F66F66F66F66 /* UpdateController.swift */,
 				68D83C1C62A101EF2EBA890F /* Audio */,
 				4A8DFFE76B3FE37EDFEF13AC /* Models */,
 				51512535A3376DF92DAAE31F /* Net */,
@@ -231,14 +235,17 @@
 			buildConfigurationList = E46131540ECBEF775393F527 /* Build configuration list for PBXNativeTarget "SipClient" */;
 			buildPhases = (
 				4F65B654303D162EB2340E1B /* Sources */,
+				AA03AA03AA03AA03AA03AA03 /* Frameworks */,
 				5880BF1CD18919B7D88BF01D /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				128BF8772FA4F484006AD146 /* PBXTargetDependency */,
 			);
 			name = SipClient;
 			packageProductDependencies = (
+				128BF8762FA4F484006AD146 /* Sparkle */,
 			);
 			productName = SipClient;
 			productReference = 867E2734C4684D7FA23C7484 /* SipClient.app */;
@@ -267,6 +274,9 @@
 			);
 			mainGroup = 791AFF7231B4EFE19C5C4129;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				128BF8742FA4F3B0006AD146 /* XCLocalSwiftPackageReference "../../Developer/Sparkle" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C8A19FCD91EC6151B540FD3B /* Products */;
 			projectDirPath = "";
@@ -276,6 +286,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		AA03AA03AA03AA03AA03AA03 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA01AA01AA01AA01AA01AA01 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXResourcesBuildPhase section */
 		5880BF1CD18919B7D88BF01D /* Resources */ = {
@@ -326,6 +347,7 @@
 				505309C2041E2E6C17347638 /* Scenario.swift in Sources */,
 				96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */,
 				F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */,
+				E55E55E55E55E55E55E55E55 /* UpdateController.swift in Sources */,
 				F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */,
 				FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */,
 				B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */,
@@ -338,6 +360,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		128BF8772FA4F484006AD146 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			productRef = 128BF8762FA4F484006AD146 /* Sparkle */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1242BE2E4F467B08E91D1B23 /* Debug */ = {
@@ -483,6 +512,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SipCall;
@@ -504,6 +534,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
 				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = SipCall;
@@ -539,6 +570,21 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		128BF8742FA4F3B0006AD146 /* XCLocalSwiftPackageReference "../../Developer/Sparkle" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../Developer/Sparkle;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		128BF8762FA4F484006AD146 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 128BF8742FA4F3B0006AD146 /* XCLocalSwiftPackageReference "../../Developer/Sparkle" */;
+			productName = Sparkle;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0580484F759D96097D0A6869 /* Project object */;
 }

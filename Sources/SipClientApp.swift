@@ -4,6 +4,12 @@ import SwiftUI
 struct SipClientApp: App {
     @StateObject private var appState = AppState()
 
+    #if canImport(Sparkle)
+    /// Sparkle updater. Activates automatic checks per `SUEnableAutomaticChecks`
+    /// in Info.plist and exposes a `Check for Updates…` menu command.
+    private let updateController = UpdateController()
+    #endif
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -21,6 +27,15 @@ struct SipClientApp: App {
                 }
         }
         .windowResizability(.contentMinSize)
+        .commands {
+            #if canImport(Sparkle)
+            // Slot the standard "Check for Updates…" item into the app
+            // menu, right after "About SipClient".
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesView(updater: updateController.updater)
+            }
+            #endif
+        }
 
         // Pop-out window for the post-call charts. Opened from the
         // wire log via openWindow(id: "callCharts", value: <UUID>);

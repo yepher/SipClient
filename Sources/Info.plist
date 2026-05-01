@@ -34,9 +34,9 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.1.0</string>
+	<string>0.1.0-b8</string>
 	<key>CFBundleVersion</key>
-	<string>7</string>
+	<string>27</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>NSBonjourServices</key>
@@ -49,6 +49,14 @@
 	<string>SIP Client communicates with SIP servers and STUN servers on your local network.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>SIP Client needs microphone access to send audio during SIP calls.</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUFeedURL</key>
+	<string>https://raw.githubusercontent.com/yepher/SipClient/main/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>xMeOWJTJ1RR9l+fHmScEm89mvi302Io6oBl7q8QDLls=</string>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>
