@@ -76,6 +76,15 @@ final class SIPCall: @unchecked Sendable {
 
     private var hangupRequested = false
 
+    /// Remote target — the Contact URI from the 200 OK to INVITE. This
+    /// is the Request-URI for in-dialog requests (ACK 2xx, BYE,
+    /// re-INVITE) per RFC 3261 §12.2.1.1.
+    private var remoteTarget: String = ""
+    /// Route set — Record-Route values from the 200 OK to INVITE, in
+    /// REVERSED order per RFC 3261 §12.1.2. routeSet[0] is the first
+    /// hop to traverse for in-dialog requests.
+    private var routeSet: [String] = []
+
     init(config: SIPCallConfig) {
         self.config = config
     }
@@ -212,7 +221,7 @@ final class SIPCall: @unchecked Sendable {
                 guard !cfg.authPassword.isEmpty else {
                     throw SIPCallError.authRequired(code: status)
                 }
-                let ack = buildACK(toTag: SIPHeaders.tagParam(resp.firstHeader("to") ?? "") ?? "")
+                let ack = buildACKNon2xx(toTag: SIPHeaders.tagParam(resp.firstHeader("to") ?? "") ?? "")
                 recordSent(method: "ACK", raw: ack)
                 try transport.send(Data(ack.utf8))
 
@@ -244,9 +253,25 @@ final class SIPCall: @unchecked Sendable {
                 negotiatedDTMFPT = ans.dtmfPT
                 inboundCrypto = ans.crypto
 
-                let ack = buildACK(toTag: toTag)
+                // Capture dialog routing info per RFC 3261 §12.1.2:
+                //   - remote target = Contact URI from the 2xx
+                //   - route set     = Record-Route reversed
+                if let contactHdr = resp.firstHeader("contact") {
+                    remoteTarget = SIPHeaders.extractURI(contactHdr)
+                }
+                if remoteTarget.isEmpty {
+                    remoteTarget = cfg.toURI.isEmpty
+                        ? "sip:\(cfg.sipHost):\(cfg.sipPort)"
+                        : cfg.toURI
+                }
+                let recordRoutes = SIPHeaders.parseRecordRouteList(
+                    resp.allHeaders("record-route"))
+                routeSet = recordRoutes.reversed()
+
+                let ack = buildACK2xx(toTag: toTag)
+                let dst = routingTarget()
                 recordSent(method: "ACK", raw: ack)
-                try transport.send(Data(ack.utf8))
+                try transport.send(Data(ack.utf8), to: dst.host, port: dst.port)
 
                 answered = true
                 onAnswered?()
@@ -322,7 +347,10 @@ final class SIPCall: @unchecked Sendable {
                 recordReceivedRequest(req)
                 if req.method == "BYE" {
                     let ok = build200OK(forRequest: req)
-                    try? transport.send(Data(ok.utf8))
+                    let target = responseTarget(forRequest: req,
+                                                fallback: (cfg.sipHost, cfg.sipPort))
+                    try? transport.send(Data(ok.utf8),
+                                        to: target.host, port: target.port)
                     recordSent(method: "200 OK (to BYE)", raw: ok)
                     hungup = true
                     emitStatus("Remote hung up")
@@ -334,8 +362,9 @@ final class SIPCall: @unchecked Sendable {
 
         if !hungup {
             let bye = buildBYE()
+            let dst = routingTarget()
             recordSent(method: "BYE", raw: bye)
-            try? transport.send(Data(bye.utf8))
+            try? transport.send(Data(bye.utf8), to: dst.host, port: dst.port)
             // Wait briefly for response
             for _ in 0..<8 {
                 if let data = try? transport.recvMessage(timeout: 0.25),
@@ -468,7 +497,11 @@ final class SIPCall: @unchecked Sendable {
         return s
     }
 
-    private func buildACK(toTag: String) -> String {
+    /// ACK for a non-2xx final response (401, 407, 4xx, 5xx, 6xx).
+    /// Per RFC 3261 §17.1.1.3 it's part of the INVITE transaction —
+    /// reuses the INVITE's branch and is sent hop-by-hop along the same
+    /// path as the INVITE (no Route, Request-URI matches the INVITE).
+    private func buildACKNon2xx(toTag: String) -> String {
         let cfg = config
         let toURI = cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI
         let fromURI = "sip:\(cfg.fromUser)@\(cfg.fromHost)"
@@ -476,8 +509,35 @@ final class SIPCall: @unchecked Sendable {
 
         var s = ""
         s += "ACK \(toURI) SIP/2.0\r\n"
+        s += "\(via(branch: branch))\r\n"
+        s += "Max-Forwards: 70\r\n"
+        s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
+        s += "To: \(toHeader)\r\n"
+        s += "Call-ID: \(callID)\r\n"
+        s += "CSeq: \(cseq) ACK\r\n"
+        s += "Content-Length: 0\r\n"
+        s += "\r\n"
+        return s
+    }
+
+    /// ACK to a 2xx INVITE response — separate transaction per RFC 3261
+    /// §13.2.2.4. Request-URI is the dialog's remote target (Contact);
+    /// route set is the reversed Record-Route from the 2xx.
+    /// CSeq matches the INVITE; branch is fresh.
+    private func buildACK2xx(toTag: String) -> String {
+        let cfg = config
+        let fromURI = "sip:\(cfg.fromUser)@\(cfg.fromHost)"
+        let dialogTo = remoteDialogToURI()
+        let toHeader = toTag.isEmpty ? "<\(dialogTo)>" : "<\(dialogTo)>;tag=\(toTag)"
+        let routing = routeRequest()
+
+        var s = ""
+        s += "ACK \(routing.requestURI) SIP/2.0\r\n"
         s += "\(via(branch: SIPTokens.branch()))\r\n"
         s += "Max-Forwards: 70\r\n"
+        for r in routing.routes {
+            s += "Route: <\(r)>\r\n"
+        }
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: \(toHeader)\r\n"
         s += "Call-ID: \(callID)\r\n"
@@ -507,15 +567,19 @@ final class SIPCall: @unchecked Sendable {
 
     private func buildBYE() -> String {
         let cfg = config
-        let toURI = cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI
         let fromURI = "sip:\(cfg.fromUser)@\(cfg.fromHost)"
         cseq += 1
-        let toHeader = toTag.isEmpty ? "<\(toURI)>" : "<\(toURI)>;tag=\(toTag)"
+        let dialogTo = remoteDialogToURI()
+        let toHeader = toTag.isEmpty ? "<\(dialogTo)>" : "<\(dialogTo)>;tag=\(toTag)"
+        let routing = routeRequest()
 
         var s = ""
-        s += "BYE \(toURI) SIP/2.0\r\n"
+        s += "BYE \(routing.requestURI) SIP/2.0\r\n"
         s += "\(via(branch: SIPTokens.branch()))\r\n"
         s += "Max-Forwards: 70\r\n"
+        for r in routing.routes {
+            s += "Route: <\(r)>\r\n"
+        }
         s += "From: \"\(cfg.fromDisplay)\" <\(fromURI)>;tag=\(fromTag)\r\n"
         s += "To: \(toHeader)\r\n"
         s += "Call-ID: \(callID)\r\n"
@@ -523,6 +587,75 @@ final class SIPCall: @unchecked Sendable {
         s += "Content-Length: 0\r\n"
         s += "\r\n"
         return s
+    }
+
+    // MARK: - Routing helpers (RFC 3261 §12.2.1.1, §18.2.2)
+
+    /// The To-URI used inside the dialog. After the 2xx INVITE is
+    /// parsed, the dialog's remote URI is the To header's URI; until
+    /// then we fall back to the INVITE's target URI.
+    private func remoteDialogToURI() -> String {
+        let cfg = config
+        if cfg.toURI.isEmpty {
+            return "sip:\(cfg.sipHost):\(cfg.sipPort)"
+        }
+        return cfg.toURI
+    }
+
+    /// Compute (Request-URI, Route headers, send-to host:port) for an
+    /// in-dialog request per RFC 3261 §12.2.1.1.
+    ///
+    ///   - Loose-routing (`;lr`) — the common case: Request-URI is the
+    ///     remote target, Route headers carry the route set in order,
+    ///     packet goes to the URI of the topmost Route (or to the
+    ///     remote target if the route set is empty).
+    ///   - Strict-routing (no `;lr`) — legacy: Request-URI is the
+    ///     topmost route's URI, the remote target moves to the bottom
+    ///     of the Route list, packet goes to that topmost route.
+    private func routeRequest() -> (requestURI: String,
+                                    routes: [String],
+                                    host: String,
+                                    port: UInt16) {
+        let cfg = config
+        let target = remoteTarget.isEmpty
+            ? (cfg.toURI.isEmpty ? "sip:\(cfg.sipHost):\(cfg.sipPort)" : cfg.toURI)
+            : remoteTarget
+        let fallbackHost = cfg.sipHost
+        let fallbackPort = cfg.sipPort
+
+        if routeSet.isEmpty {
+            let hp = SIPHeaders.hostPort(fromURI: target)
+            return (target, [], hp?.host ?? fallbackHost, hp?.port ?? fallbackPort)
+        }
+        if SIPHeaders.hasLooseRouting(routeSet[0]) {
+            let hp = SIPHeaders.hostPort(fromURI: routeSet[0])
+            return (target, routeSet, hp?.host ?? fallbackHost, hp?.port ?? fallbackPort)
+        }
+        // Strict routing: pop top, append target to bottom.
+        let newURI = routeSet[0]
+        let routes = Array(routeSet.dropFirst()) + [target]
+        let hp = SIPHeaders.hostPort(fromURI: newURI)
+        return (newURI, routes, hp?.host ?? fallbackHost, hp?.port ?? fallbackPort)
+    }
+
+    /// Send-to address for an in-dialog request. Convenience wrapper
+    /// around `routeRequest`.
+    private func routingTarget() -> (host: String, port: UInt16) {
+        let r = routeRequest()
+        return (r.host, r.port)
+    }
+
+    /// Per RFC 3261 §18.2.2, derive the send-to address for a response
+    /// from the request's topmost Via, honoring `received` / `rport`.
+    private func responseTarget(forRequest req: SIPRequest,
+                                fallback: (host: String, port: UInt16))
+        -> (host: String, port: UInt16) {
+        guard let via = req.firstHeader("via"),
+              let target = SIPHeaders.responseTarget(fromTopmostVia: via)
+        else {
+            return fallback
+        }
+        return target
     }
 
     /// Build a 200 OK response to an in-dialog request (e.g., BYE) by echoing

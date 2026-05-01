@@ -47,10 +47,22 @@ protocol SIPTransport: AnyObject {
     func start() throws
     /// Send raw bytes (one whole SIP message) to the peer.
     func send(_ data: Data) throws
+    /// Send to a specific host:port — used for in-dialog requests routed
+    /// per RFC 3261 §12.2.1 (route-set first hop) and for responses sent
+    /// per §18.2.2 (topmost Via). Only UDP can vary the destination per
+    /// message; stream transports are bound to their connection so the
+    /// default implementation falls back to `send(_:)`.
+    func send(_ data: Data, to host: String, port: UInt16) throws
     /// Block up to `timeout` for the next complete SIP message. Returns
     /// `nil` on timeout.
     func recvMessage(timeout: TimeInterval) throws -> Data?
     func close()
+}
+
+extension SIPTransport {
+    func send(_ data: Data, to host: String, port: UInt16) throws {
+        try send(data)
+    }
 }
 
 // MARK: - UDP
@@ -76,6 +88,10 @@ final class UDPSIPTransport: SIPTransport, @unchecked Sendable {
 
     func send(_ data: Data) throws {
         try socket.send(data, to: targetHost, port: targetPort)
+    }
+
+    func send(_ data: Data, to host: String, port: UInt16) throws {
+        try socket.send(data, to: host, port: port)
     }
 
     func recvMessage(timeout: TimeInterval) throws -> Data? {

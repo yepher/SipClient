@@ -13,6 +13,10 @@ struct SIPResponse {
     func firstHeader(_ name: String) -> String? {
         headers[name.lowercased()]?.first
     }
+
+    func allHeaders(_ name: String) -> [String] {
+        headers[name.lowercased()] ?? []
+    }
 }
 
 /// Parsed SIP request (used for in-dialog BYE / re-INVITE handling and for UAS).
@@ -25,6 +29,10 @@ struct SIPRequest {
 
     func firstHeader(_ name: String) -> String? {
         headers[name.lowercased()]?.first
+    }
+
+    func allHeaders(_ name: String) -> [String] {
+        headers[name.lowercased()] ?? []
     }
 }
 
@@ -117,6 +125,149 @@ enum SIPHeaders {
         let after = headerValue[r.upperBound...]
         let end = after.firstIndex(of: ";") ?? after.endIndex
         return String(after[..<end]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Extract the URI inside `<...>` from a header value (Contact,
+    /// Record-Route, Route, To, From). Returns nil if the value is not
+    /// angle-bracketed.
+    static func bracketedURI(_ value: String) -> String? {
+        guard let l = value.firstIndex(of: "<") else { return nil }
+        let after = value.index(after: l)
+        guard let r = value[after...].firstIndex(of: ">") else { return nil }
+        return String(value[after..<r])
+    }
+
+    /// Extract just the URI from a name-addr or addr-spec header value.
+    /// `"Foo" <sip:f@bar>` → `sip:f@bar`; `sip:f@bar;lr` (no brackets) →
+    /// `sip:f@bar;lr` (params on a bare addr-spec belong to the URI).
+    static func extractURI(_ value: String) -> String {
+        if let bracketed = bracketedURI(value) {
+            return bracketed
+        }
+        return value.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// Flatten one or more Record-Route header values (each possibly
+    /// comma-separated) into a list of bare URI strings, preserving order
+    /// of appearance on the wire.
+    static func parseRecordRouteList(_ values: [String]) -> [String] {
+        var out: [String] = []
+        for line in values {
+            for piece in splitTopLevelCommas(line) {
+                let trimmed = piece.trimmingCharacters(in: .whitespaces)
+                if trimmed.isEmpty { continue }
+                if let inside = bracketedURI(trimmed) {
+                    out.append(inside)
+                } else {
+                    // Bare addr-spec — keep params attached.
+                    out.append(trimmed)
+                }
+            }
+        }
+        return out
+    }
+
+    /// Split a header value on commas that aren't inside angle brackets.
+    /// Header values like `<sip:a;b,c>, <sip:d>` must split as two URIs.
+    private static func splitTopLevelCommas(_ s: String) -> [String] {
+        var parts: [String] = []
+        var depth = 0
+        var current = ""
+        for ch in s {
+            if ch == "<" {
+                depth += 1
+                current.append(ch)
+            } else if ch == ">" {
+                depth = max(0, depth - 1)
+                current.append(ch)
+            } else if ch == "," && depth == 0 {
+                parts.append(current)
+                current = ""
+            } else {
+                current.append(ch)
+            }
+        }
+        if !current.isEmpty { parts.append(current) }
+        return parts
+    }
+
+    /// Extract host and port from a SIP URI.
+    /// Handles user-info, params after `;`, and headers after `?`.
+    /// Defaults the port to 5060 (or 5061 for `sips:`).
+    static func hostPort(fromURI uri: String) -> (host: String, port: UInt16)? {
+        var s = uri.trimmingCharacters(in: .whitespaces)
+        let isSecure: Bool
+        if s.hasPrefix("sip:") {
+            s = String(s.dropFirst(4)); isSecure = false
+        } else if s.hasPrefix("sips:") {
+            s = String(s.dropFirst(5)); isSecure = true
+        } else {
+            isSecure = false
+        }
+        if let at = s.firstIndex(of: "@") {
+            s = String(s[s.index(after: at)...])
+        }
+        if let semi = s.firstIndex(of: ";") {
+            s = String(s[..<semi])
+        }
+        if let q = s.firstIndex(of: "?") {
+            s = String(s[..<q])
+        }
+        let trimmed = s.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty { return nil }
+        if let colon = trimmed.firstIndex(of: ":") {
+            let host = String(trimmed[..<colon])
+            let portStr = String(trimmed[trimmed.index(after: colon)...])
+            let port = UInt16(portStr) ?? (isSecure ? 5061 : 5060)
+            return (host, port)
+        }
+        return (trimmed, isSecure ? 5061 : 5060)
+    }
+
+    /// True if a Route / Record-Route URI carries the `;lr` parameter.
+    static func hasLooseRouting(_ uri: String) -> Bool {
+        let lower = uri.lowercased()
+        return lower.range(of: ";lr;") != nil
+            || lower.range(of: ";lr=") != nil
+            || lower.hasSuffix(";lr")
+    }
+
+    /// Per RFC 3261 §18.2.2, derive the destination of a SIP response
+    /// from the topmost Via of the request being responded to. Honors
+    /// `received=` and `rport=` overrides used for NAT traversal.
+    static func responseTarget(fromTopmostVia via: String) -> (host: String, port: UInt16)? {
+        // "SIP/2.0/UDP host[:port];param;param=val..."
+        let parts = via.split(separator: " ", maxSplits: 1, omittingEmptySubsequences: true)
+        guard parts.count >= 2 else { return nil }
+        let rest = String(parts[1])
+        let semiIdx = rest.firstIndex(of: ";")
+        let hostPortStr = semiIdx.map { String(rest[..<$0]) } ?? rest
+        let paramsStr = semiIdx.map { String(rest[rest.index(after: $0)...]) } ?? ""
+
+        var host: String
+        var port: UInt16
+        let trimmedHP = hostPortStr.trimmingCharacters(in: .whitespaces)
+        if let colon = trimmedHP.firstIndex(of: ":") {
+            host = String(trimmedHP[..<colon])
+            port = UInt16(String(trimmedHP[trimmedHP.index(after: colon)...])) ?? 5060
+        } else {
+            host = trimmedHP
+            port = 5060
+        }
+
+        for p in paramsStr.split(separator: ";") {
+            let kv = p.split(separator: "=", maxSplits: 1)
+            let key = kv[0].trimmingCharacters(in: .whitespaces).lowercased()
+            let value = kv.count > 1
+                ? String(kv[1]).trimmingCharacters(in: .whitespaces)
+                : ""
+            if key == "received", !value.isEmpty {
+                host = value
+            } else if key == "rport", let n = UInt16(value) {
+                port = n
+            }
+        }
+        return host.isEmpty ? nil : (host, port)
     }
 
     /// Parse a comma-separated `Digest k="v", k2="v2"` header into a key/value map.
