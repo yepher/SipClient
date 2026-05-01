@@ -35,6 +35,14 @@ final class AppState: ObservableObject {
     @Published var inputDevices: [AudioDevice] = []
     @Published var outputDevices: [AudioDevice] = []
 
+    /// Post-call chart snapshots, keyed by snapshot ID. The wire log's
+    /// "View In Call Chart" entry references one of these. Capped at
+    /// the most recent N to bound memory.
+    @Published private(set) var callCharts: [UUID: CallChartSnapshot] = [:]
+    /// Insertion order so we can evict oldest when the cap is reached.
+    private var callChartOrder: [UUID] = []
+    private let maxCallCharts = 20
+
     let audioEngine = AudioEngine()
 
     /// Shared mic→RTP buffer. The mic tap writes here, the RTP send loop
@@ -116,7 +124,32 @@ final class AppState: ObservableObject {
         }
     }
 
-    func clearLog() { wireLog.removeAll() }
+    func clearLog() {
+        wireLog.removeAll()
+        callCharts.removeAll()
+        callChartOrder.removeAll()
+    }
+
+    func callChart(id: UUID) -> CallChartSnapshot? {
+        callCharts[id]
+    }
+
+    private func storeCallChart(_ snapshot: CallChartSnapshot) {
+        callCharts[snapshot.id] = snapshot
+        callChartOrder.append(snapshot.id)
+        while callChartOrder.count > maxCallCharts {
+            let evict = callChartOrder.removeFirst()
+            callCharts.removeValue(forKey: evict)
+        }
+    }
+
+    private func formatChartDuration(_ samples: [ArrivalSample]) -> String {
+        guard let first = samples.first?.at, let last = samples.last?.at else {
+            return "0.0 s"
+        }
+        let secs = last.timeIntervalSince(first)
+        return String(format: "%.1f s", secs)
+    }
 
     // MARK: - Outbound call
 
@@ -466,6 +499,31 @@ final class AppState: ObservableObject {
             appendLog(.init(direction: .sent, kind: .info,
                             summary: metrics.summaryLine,
                             detail: metrics.summaryDetail))
+            // Stash a chart-only snapshot and drop a clickable "View In
+            // Call Chart" entry into the wire log so users can revisit
+            // the full delta + jitter timelines after the call ends.
+            if !metrics.allSamples.isEmpty {
+                let snapshot = CallChartSnapshot(
+                    id: UUID(),
+                    samples: metrics.allSamples,
+                    nominalDeltaMs: metrics.nominalDeltaMs,
+                    inviteAt: metrics.inviteAt,
+                    answeredAt: metrics.answeredAt,
+                    firstAudioAt: metrics.firstAudioAt,
+                    endedAt: Date()
+                )
+                storeCallChart(snapshot)
+                appendLog(.init(
+                    direction: .sent, kind: .info,
+                    summary: "View In Call Chart "
+                           + "(\(metrics.allSamples.count) samples, "
+                           + "\(formatChartDuration(metrics.allSamples)))",
+                    detail: "Open the post-call delta + jitter charts "
+                          + "in a separate window with hover values "
+                          + "and drag-to-zoom.",
+                    callChartID: snapshot.id
+                ))
+            }
         }
         callMicBuffer.clear()
         audioEngine.stopCallMode()

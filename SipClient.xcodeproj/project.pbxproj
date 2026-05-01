@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A11A11A11A11A11A11A11A11 /* CallChartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */; };
+		C33C33C33C33C33C33C33C33 /* CallChartsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */; };
 		11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */; };
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
 		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
@@ -93,6 +95,8 @@
 		F985791C1644D7A2C7699027 /* SIPCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCall.swift; sourceTree = "<group>"; };
 		F9CEBEB471B82F2FA682B890 /* AudioClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClip.swift; sourceTree = "<group>"; };
 		FC7085A2F81C837A2152219F /* AudioLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLibraryView.swift; sourceTree = "<group>"; };
+		B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartSnapshot.swift; sourceTree = "<group>"; };
+		D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartsWindow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -100,6 +104,7 @@
 			isa = PBXGroup;
 			children = (
 				FC7085A2F81C837A2152219F /* AudioLibraryView.swift */,
+				D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */,
 				0C3FD7D41D5B05E05D014C3E /* DialerView.swift */,
 				AA55B20DDD93EA0D027570E3 /* InboundView.swift */,
 				77B44EE494E591B8E7A59BDB /* InCallView.swift */,
@@ -126,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				F9CEBEB471B82F2FA682B890 /* AudioClip.swift */,
+				B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */,
 				828E7FC46E703B36AE49F68F /* CallMetrics.swift */,
 				64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */,
 				CC8A56B48A1B633CCCD04662 /* Scenario.swift */,
@@ -288,6 +294,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */,
+				A11A11A11A11A11A11A11A11 /* CallChartSnapshot.swift in Sources */,
+				C33C33C33C33C33C33C33C33 /* CallChartsWindow.swift in Sources */,
 				1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */,
 				6DB23C1A9A45D5E5428BD5BD /* AudioDevices.swift in Sources */,
 				831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */,

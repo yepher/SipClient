@@ -3,6 +3,7 @@ import AppKit
 
 struct WireLogView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.openWindow) private var openWindow
     @State private var selectedID: UUID?
     @State private var filter: Filter = .all
     @State private var search: String = ""
@@ -178,6 +179,15 @@ struct WireLogView: View {
                     Text(entry.summary)
                         .font(.headline)
                     Spacer()
+                    if let chartID = entry.callChartID,
+                       appState.callChart(id: chartID) != nil {
+                        Button {
+                            openWindow(id: "callCharts", value: chartID)
+                        } label: {
+                            Label("Open Charts", systemImage: "chart.xyaxis.line")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
                     Button {
                         let text = entry.detail ?? entry.summary
                         let pb = NSPasteboard.general
@@ -214,6 +224,7 @@ struct WireLogView: View {
     }
 
     private func icon(for entry: WireLogEntry) -> String {
+        if entry.callChartID != nil { return "chart.xyaxis.line" }
         switch entry.kind {
         case .error: return "exclamationmark.triangle.fill"
         case .info: return "info.circle"
@@ -224,6 +235,7 @@ struct WireLogView: View {
     }
 
     private func color(for entry: WireLogEntry) -> Color {
+        if entry.callChartID != nil { return .accentColor }
         switch entry.kind {
         case .error: return .red
         case .info: return .secondary

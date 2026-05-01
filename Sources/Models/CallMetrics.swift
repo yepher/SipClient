@@ -41,6 +41,10 @@ final class CallMetrics: ObservableObject {
     /// chart; these arrays accumulate for end-of-call statistics.
     private var allDeltas: [Double] = []
     private var allJitters: [Double] = []
+    /// Full-call (timestamped) sample stream — kept so the post-call
+    /// "View In Call Chart" popout can render the entire duration with
+    /// hover + zoom. Same shape as the live `samples` window.
+    private(set) var allSamples: [ArrivalSample] = []
 
     private static let windowSeconds: TimeInterval = 10
 
@@ -93,11 +97,12 @@ final class CallMetrics: ObservableObject {
             // RFC 3550 §A.8: J += (|D| - J) / 16, where D = delta - expected.
             let absDeviation = abs(deltaMs - nominalDeltaMs)
             smoothedJitterMs += (absDeviation - smoothedJitterMs) / 16
-            samples.append(ArrivalSample(
+            let sample = ArrivalSample(
                 at: now,
                 deltaMs: deltaMs,
                 jitterMs: smoothedJitterMs
-            ))
+            )
+            samples.append(sample)
             // Trim samples older than the window.
             let cutoff = now.addingTimeInterval(-Self.windowSeconds)
             while let first = samples.first, first.at < cutoff {
@@ -105,6 +110,7 @@ final class CallMetrics: ObservableObject {
             }
             allDeltas.append(deltaMs)
             allJitters.append(smoothedJitterMs)
+            allSamples.append(sample)
         }
         lastArrival = now
 

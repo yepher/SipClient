@@ -4,7 +4,25 @@ A small macOS SIP client built for testing SIP infrastructure. Place outbound
 calls, send DTMF, run scripted scenarios, and inspect every SIP and RTP
 exchange in a live wire log.
 
+## Screens
+
+### Live In Call Info
+
+Easy to see some key information like how long until first `TRYING`, `RINGING`, `200 OK`, and first audio that is not silence. Also real-time Jitter and Delta chart for received RTP stream.
+
 ![Dialer](screenshot/call_setup.png)
+
+## Call Log
+
+I cronological log of calls. After call the call metrics are logged.
+
+![Call Log](screenshot/call_log.png)
+### Call Chart
+
+In call log can click on the Call Chart and review the metrics for the entire call.
+
+![Call Chart](screenshot/chart.png)
+
 ## Features
 
 - **SIP UAC** — `INVITE` / `ACK` / `BYE` / `CANCEL`, digest auth (MD5,

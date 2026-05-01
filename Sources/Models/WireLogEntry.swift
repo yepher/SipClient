@@ -19,6 +19,10 @@ struct WireLogEntry: Identifiable, Codable {
     let kind: WireKind
     let summary: String
     let detail: String?
+    /// When set, this entry references a stored `CallChartSnapshot` in
+    /// AppState — the wire log surfaces a "View In Call Chart" action
+    /// that pops out the post-call charts.
+    let callChartID: UUID?
 
     init(
         id: UUID = UUID(),
@@ -26,7 +30,8 @@ struct WireLogEntry: Identifiable, Codable {
         direction: WireDirection,
         kind: WireKind,
         summary: String,
-        detail: String? = nil
+        detail: String? = nil,
+        callChartID: UUID? = nil
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -34,5 +39,6 @@ struct WireLogEntry: Identifiable, Codable {
         self.kind = kind
         self.summary = summary
         self.detail = detail
+        self.callChartID = callChartID
     }
 }

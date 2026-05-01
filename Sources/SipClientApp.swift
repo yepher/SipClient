@@ -21,5 +21,13 @@ struct SipClientApp: App {
                 }
         }
         .windowResizability(.contentMinSize)
+
+        // Pop-out window for the post-call charts. Opened from the
+        // wire log via openWindow(id: "callCharts", value: <UUID>);
+        // the value picks which CallChartSnapshot in AppState to draw.
+        WindowGroup("Call Charts", id: "callCharts", for: UUID.self) { $snapshotID in
+            CallChartsWindow(snapshotID: snapshotID)
+                .environmentObject(appState)
+        }
     }
 }
