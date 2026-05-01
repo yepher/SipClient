@@ -7,3 +7,4 @@ build/
 # Local secrets — should never be committed.
 *.sparkle.key
 sipclient-release.env
+release_notes

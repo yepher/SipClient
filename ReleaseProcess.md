@@ -4,6 +4,11 @@ SipClient uses [Sparkle 2](https://sparkle-project.org/) for in-app
 auto-updates. The release is automated by `bin/make_release.sh`; this
 document explains the one-time setup and the per-release flow.
 
+
+tldr; after setup:
+
+`./bin/make_release.sh 0.1.0-b8 release_notes/0.1.0-b8.html`
+
 ---
 
 ## How users see updates
@@ -141,8 +146,33 @@ the command line, so it doesn't depend on this profile being saved.
 From the project root, on a clean `main`:
 
 ```sh
+# Inline HTML release notes
 ./bin/make_release.sh 0.1.0-b8 \
     "<ul><li>Fix RTP jitter measurement</li><li>RFC-compliant ACK / BYE</li></ul>"
+
+# OR — path to an HTML file (auto-detected if the argument is an existing file)
+./bin/make_release.sh 0.1.0-b8 release_notes/0.1.0-b8.html
+
+# OR — no notes argument (uses a default "Release X.Y.Z" message)
+./bin/make_release.sh 0.1.0-b8
+```
+
+The script is **resumable**. Each phase records a marker in
+`build/release/<version>/.state/`; if a transient failure (notary
+upload timeout, network blip) interrupts a run, simply re-run the same
+command — completed phases are skipped automatically.
+
+To force a clean rebuild for a version that already has cached state:
+
+```sh
+REBUILD=1 ./bin/make_release.sh 0.1.0-b8 ...
+```
+
+To redo a single phase, delete its marker and re-run, e.g.:
+
+```sh
+rm build/release/0.1.0-b8/.state/notarize.done
+./bin/make_release.sh 0.1.0-b8 ...
 ```
 
 This will, in order:

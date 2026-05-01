@@ -83,6 +83,24 @@ def main() -> int:
         return 4
     channel = channels[0]
 
+    # Drop any existing <item> entries whose <sparkle:version> matches
+    # the build number we're inserting — keeps the appcast clean when
+    # the release script is re-run for the same version (e.g. after a
+    # transient notary failure).
+    removed = 0
+    for existing in list(channel.getElementsByTagName("item")):
+        ver_nodes = existing.getElementsByTagName("sparkle:version")
+        if not ver_nodes:
+            continue
+        first = ver_nodes[0].firstChild
+        if first is None:
+            continue
+        if first.nodeValue.strip() == args.build:
+            channel.removeChild(existing)
+            removed += 1
+    if removed:
+        print(f"  removed {removed} existing entry/entries for build {args.build}")
+
     item = dom.createElement("item")
 
     title = dom.createElement("title")
