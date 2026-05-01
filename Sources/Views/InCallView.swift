@@ -200,14 +200,18 @@ struct InCallView: View {
                         .foregroundStyle(.blue)
                     }
                 }
-                // Cap the y-axis so the ptime reference sits ~1/3 from
-                // the bottom and stays clearly distinct from y=0 even
-                // when spikes occur. Spikes above the cap are visually
-                // clipped, which is fine — the line going off the top
-                // is still a clear "spike" signal.
-                .chartYScale(domain: 0 ... max(metrics.nominalDeltaMs * 3, 60))
+                // Auto-scale: y-axis is the larger of (a) twice the
+                // ptime reference (so the reference line never slams
+                // into the bottom on a clean stream), or (b) the max
+                // observed delta in the visible window plus 20 %
+                // headroom (so spikes always fit).
+                .chartYScale(domain: 0 ... max(
+                    metrics.nominalDeltaMs * 2,
+                    (metrics.samples.map(\.deltaMs).max() ?? 0) * 1.2
+                ))
                 .chartYAxis { AxisMarks(position: .leading) }
                 .chartXAxis(.hidden)
+                .chartPlotStyle { $0.clipped() }
                 .frame(height: 50)
 
                 // Jitter — bottom chart, separate Y scale.
@@ -228,12 +232,13 @@ struct InCallView: View {
                         .foregroundStyle(.orange)
                     }
                 }
-                // Floor the upper bound at 30 ms so a quiet stream
-                // doesn't squish jitter to invisibility against the
-                // y=0 reference line.
-                .chartYScale(
-                    domain: 0 ... max(30, (metrics.samples.map(\.jitterMs).max() ?? 0) * 1.2)
-                )
+                // Auto-scale: max observed jitter + 20 % headroom,
+                // floored at 10 ms so a near-perfect stream doesn't
+                // squish the line on top of the y=0 reference.
+                .chartYScale(domain: 0 ... max(
+                    10,
+                    (metrics.samples.map(\.jitterMs).max() ?? 0) * 1.2
+                ))
                 .chartYAxis { AxisMarks(position: .leading) }
                 .chartXAxis {
                     AxisMarks(values: .automatic(desiredCount: 4)) { _ in
@@ -242,6 +247,7 @@ struct InCallView: View {
                         AxisValueLabel(format: .dateTime.minute().second())
                     }
                 }
+                .chartPlotStyle { $0.clipped() }
                 .frame(height: 50)
             }
         }
