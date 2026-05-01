@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A11A11A11A11A11A11A11A11 /* CallChartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */; };
-		C33C33C33C33C33C33C33C33 /* CallChartsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */; };
 		11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */; };
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
 		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
@@ -21,6 +19,7 @@
 		831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B361FCC5C7F35618659A5B /* AudioEngine.swift */; };
 		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
+		A11A11A11A11A11A11A11A11 /* CallChartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */; };
 		A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */; };
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
@@ -35,6 +34,7 @@
 		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
 		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
 		C2D3E4F50607080910111213 /* SRTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F50607080910111214 /* SRTP.swift */; };
+		C33C33C33C33C33C33C33C33 /* CallChartsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */; };
 		C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60708091011121315 /* SRTPCrypto.swift */; };
 		C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F7D22A8A46A1E2C92618A0 /* STUN.swift */; };
 		D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7085A2F81C837A2152219F /* AudioLibraryView.swift */; };
@@ -76,6 +76,7 @@
 		A4B0C1D2E3F4A5B6C7D8E9F0 /* InboundListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundListener.swift; sourceTree = "<group>"; };
 		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
+		B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartSnapshot.swift; sourceTree = "<group>"; };
 		B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
 		B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerPlayback.swift; sourceTree = "<group>"; };
 		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
@@ -87,6 +88,7 @@
 		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
 		D3E4F50607080910111214 /* SRTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTP.swift; sourceTree = "<group>"; };
 		D3F7D22A8A46A1E2C92618A0 /* STUN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STUN.swift; sourceTree = "<group>"; };
+		D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartsWindow.swift; sourceTree = "<group>"; };
 		D4E5F60708091011121315 /* SRTPCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTPCrypto.swift; sourceTree = "<group>"; };
 		EE6F1B5011F182DC913B3203 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
@@ -95,8 +97,6 @@
 		F985791C1644D7A2C7699027 /* SIPCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCall.swift; sourceTree = "<group>"; };
 		F9CEBEB471B82F2FA682B890 /* AudioClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClip.swift; sourceTree = "<group>"; };
 		FC7085A2F81C837A2152219F /* AudioLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLibraryView.swift; sourceTree = "<group>"; };
-		B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartSnapshot.swift; sourceTree = "<group>"; };
-		D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartsWindow.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
