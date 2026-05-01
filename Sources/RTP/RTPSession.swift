@@ -37,7 +37,10 @@ final class RTPSession: @unchecked Sendable {
 
     /// Called from the receive task with decoded Int16 mono PCM at the
     /// codec's native sample rate (8 kHz for G.711, 16 kHz for G.722).
-    var onPlaybackPCM: (@Sendable ([Int16]) -> Void)?
+    /// `arrivedAt` is stamped immediately after `recvOnce` returns —
+    /// before decode and the MainActor hop — so jitter math sees the
+    /// true network arrival time, not Swift scheduling delay.
+    var onPlaybackPCM: (@Sendable ([Int16], Date) -> Void)?
 
     /// Called when an incoming RTP packet has the DTMF payload type.
     var onTelephoneEvent: (@Sendable (UInt8, UInt16) -> Void)?
@@ -171,7 +174,13 @@ final class RTPSession: @unchecked Sendable {
                     return
                 }
                 guard let pkt, pkt.data.count >= 12 else { continue }
-                self.handleRTPPacket(pkt.data)
+                // Stamp the arrival time *here* — before SRTP unwrap,
+                // codec decode, and especially before the MainActor hop
+                // in the host's onPlaybackPCM. UI work on MainActor can
+                // delay scheduling by tens of ms, which would otherwise
+                // be folded into our jitter measurement.
+                let arrivedAt = Date()
+                self.handleRTPPacket(pkt.data, arrivedAt: arrivedAt)
             }
         }
     }
@@ -323,7 +332,7 @@ final class RTPSession: @unchecked Sendable {
         packetsLost = Int64(packetsExpected) - Int64(packetsReceived)
     }
 
-    private func handleRTPPacket(_ data: Data) {
+    private func handleRTPPacket(_ data: Data, arrivedAt: Date) {
         // Decrypt + verify if inbound SRTP is configured. We learn the
         // peer's SSRC from the first packet; the SDP-negotiated keys
         // bind to that SSRC.
@@ -363,7 +372,7 @@ final class RTPSession: @unchecked Sendable {
         }
 
         let pcm = decoder.decode(payload: payload)
-        onPlaybackPCM?(pcm)
+        onPlaybackPCM?(pcm, arrivedAt)
     }
 
     // MARK: - DTMF helpers

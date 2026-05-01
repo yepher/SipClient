@@ -90,8 +90,10 @@ final class CallMetrics: ObservableObject {
     /// Record one inbound RTP packet's arrival. `peak` is the maximum
     /// |sample| of the decoded PCM payload — used to detect when real
     /// audio (vs. comfort silence) starts after the call answers.
-    func recordPacket(peak: Int32) {
-        let now = Date()
+    /// `at` is the network-arrival timestamp — must be sampled in the
+    /// recv task before any MainActor hop, otherwise UI scheduling
+    /// latency leaks into the jitter measurement.
+    func recordPacket(peak: Int32, at now: Date = Date()) {
         if let last = lastArrival {
             let deltaMs = now.timeIntervalSince(last) * 1000
             // RFC 3550 §A.8: J += (|D| - J) / 16, where D = delta - expected.

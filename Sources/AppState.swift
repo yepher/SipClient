@@ -446,7 +446,7 @@ final class AppState: ObservableObject {
             // Now wire up RTP receive → playback. By the time the first
             // RTP packet hits this callback, the engine is already
             // running with both input and output configured.
-            rtp.onPlaybackPCM = { [weak self] samples in
+            rtp.onPlaybackPCM = { [weak self] samples, arrivedAt in
                 guard let self else { return }
                 self.audioEngine.levelMeter.recordRecv(samples)
                 // Compute peak for first-audio detection + jitter math.
@@ -457,7 +457,9 @@ final class AppState: ObservableObject {
                     if absV > peak { peak = absV }
                 }
                 Task { @MainActor in
-                    self.callMetrics?.recordPacket(peak: peak)
+                    // Pass the network-arrival timestamp through so
+                    // jitter math isn't poisoned by MainActor latency.
+                    self.callMetrics?.recordPacket(peak: peak, at: arrivedAt)
                     self.audioEngine.enqueuePlayback(samples: samples)
                 }
             }
