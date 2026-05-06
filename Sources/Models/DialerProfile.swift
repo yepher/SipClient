@@ -50,7 +50,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         authUser: String = "",
         useSTUN: Bool = true,
         stunServer: String = "",
-        localSIPPort: UInt16 = 5060,
+        localSIPPort: UInt16 = 0,
         localRTPPort: UInt16 = 10000,
         callDuration: Double = 30,
         codecs: [CodecKind] = [.pcmu, .pcma],

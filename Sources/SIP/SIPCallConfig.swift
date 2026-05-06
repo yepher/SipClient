@@ -6,7 +6,10 @@ struct SIPCallConfig {
     var toURI: String = ""
 
     var localIP: String = ""           // auto-detected if empty
-    var localSIPPort: UInt16 = 5060
+    /// 0 ⇒ ephemeral. Outbound calls default to ephemeral so the client
+    /// only pins the SIP listen port (5060) when the inbound listener
+    /// is explicitly started.
+    var localSIPPort: UInt16 = 0
     var localRTPPort: UInt16 = 10000
 
     var useSTUN: Bool = true

@@ -221,10 +221,15 @@ struct DialerView: View {
     @ViewBuilder
     private var localSection: some View {
         Section("Local") {
-            TextField("Local SIP port",
-                      text: portBind(\.localSIPPort, default: 5060))
+            TextField("Local SIP port (0 = ephemeral)",
+                      text: portBind(\.localSIPPort, default: 0))
             TextField("Local RTP port",
                       text: portBind(\.localRTPPort, default: 10000))
+            Text("Leave the SIP port at 0 unless you need a fixed source "
+                 + "port for outbound calls. Pinning it to 5060 conflicts "
+                 + "with the inbound listener.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
