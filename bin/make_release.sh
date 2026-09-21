@@ -119,11 +119,34 @@ else
     echo "$BUILD_NUMBER" > "$BUILD_NUM_FILE"
 fi
 
-# Bumping the Info.plist is idempotent — always do it. (Versions live
-# in source control; a partial run shouldn't leave plist edits behind.)
+# Bumping is idempotent — always do it. (Versions live in source
+# control; a partial run shouldn't leave plist edits behind.)
 echo "==> Bumping version to ${SHORT_VERSION} (build ${BUILD_NUMBER})"
 plutil -replace CFBundleShortVersionString -string "$SHORT_VERSION" "$INFO_PLIST"
 plutil -replace CFBundleVersion -string "$BUILD_NUMBER" "$INFO_PLIST"
+
+# Info.plist is GENERATED from project.yml by XcodeGen, so the plist edit
+# above survives only until the next `xcodegen generate` — and building in
+# Xcode after a regenerate would then ship a binary stamped with the
+# previous version while the appcast advertises the new one. Sparkle
+# compares CFBundleVersion, so that mismatch puts clients in an update
+# loop: install, still report the old build, get offered it again.
+# Bump the generator's copy too so the two cannot diverge.
+if [ -f "$PROJECT_ROOT/project.yml" ]; then
+    echo "==> Bumping project.yml to match"
+    /usr/bin/sed -i '' \
+        -e "s/^\( *CFBundleShortVersionString: \).*/\1\"${SHORT_VERSION}\"/" \
+        -e "s/^\( *CFBundleVersion: \).*/\1\"${BUILD_NUMBER}\"/" \
+        "$PROJECT_ROOT/project.yml"
+    # Verify, rather than trusting the substitution to have matched.
+    if ! grep -q "CFBundleShortVersionString: \"${SHORT_VERSION}\"" \
+              "$PROJECT_ROOT/project.yml"; then
+        echo "error: could not bump CFBundleShortVersionString in project.yml." >&2
+        echo "       Update it by hand, or the next xcodegen run will" >&2
+        echo "       silently revert the version." >&2
+        exit 1
+    fi
+fi
 
 # ---------------------------------------------------------------- build
 if phase_done build && [ -d "$APP_SRC" ]; then
@@ -292,8 +315,8 @@ echo ""
 echo "Release artifact ready:  $DIST_ZIP"
 echo ""
 echo "Next steps:"
-echo "  git diff Sources/Info.plist appcast.xml          # review"
-echo "  git add Sources/Info.plist appcast.xml"
+echo "  git diff Sources/Info.plist project.yml appcast.xml   # review"
+echo "  git add Sources/Info.plist project.yml appcast.xml"
 echo "  git commit -m \"Release ${SHORT_VERSION}\""
 echo "  git tag ${TAG} && git push --tags && git push"
 if [ -f "$RELEASE_NOTES_INPUT" ]; then
