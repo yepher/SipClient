@@ -45,9 +45,20 @@ struct CallChartsView: View {
 
     // MARK: Recording playback
 
-    /// Waveform of the call recording, nil until loaded (or if there is
+    /// What the audio lane is showing.
+    enum LaneMode: String, CaseIterable, Identifiable {
+        case waveform = "Waveform"
+        case mfcc = "MFCC"
+        var id: String { rawValue }
+    }
+    @State private var laneMode: LaneMode = .waveform
+
+    /// Analysis of the call recording, nil until loaded (or if there is
     /// no recording for this call).
-    @State private var envelope: WaveformEnvelope?
+    @State private var analysis: RecordingAnalysis?
+    /// Convenience accessor — the HTML export and waveform drawing both
+    /// want just the envelope.
+    private var envelope: WaveformEnvelope? { analysis?.envelope }
     /// Why the waveform couldn't be drawn, if it couldn't.
     @State private var waveformError: String?
     @State private var player: AVAudioPlayer?
@@ -138,12 +149,12 @@ struct CallChartsView: View {
         // Scanning the whole file would block the window opening, so it
         // happens off the main actor and the lane appears when ready.
         let result = await Task.detached(priority: .userInitiated) {
-            () -> Result<WaveformEnvelope, Error> in
-            do { return .success(try WaveformEnvelope.load(url: rec.url)) }
+            () -> Result<RecordingAnalysis, Error> in
+            do { return .success(try RecordingAnalysis.load(url: rec.url)) }
             catch { return .failure(error) }
         }.value
         switch result {
-        case .success(let env): envelope = env
+        case .success(let a): analysis = a
         case .failure(let err): waveformError = err.localizedDescription
         }
     }
@@ -267,17 +278,36 @@ struct CallChartsView: View {
     private func waveformLane(_ rec: (url: URL, startedAt: Date)) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 12) {
-                Text("Audio").font(.caption2).foregroundStyle(.secondary)
-                if envelope == nil && waveformError == nil {
-                    Text("loading waveform…")
+                Picker("", selection: $laneMode) {
+                    ForEach(LaneMode.allCases) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(width: 170)
+                .help(laneMode == .waveform
+                      ? "Amplitude over time"
+                      : "Mel-frequency cepstral coefficients — spectral "
+                        + "shape over time, low coefficients at the bottom")
+                if analysis == nil && waveformError == nil {
+                    Text("analysing recording…")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
                 if let err = waveformError {
                     Text(err).font(.caption2).foregroundStyle(.orange)
                 }
+                if laneMode == .mfcc, analysis?.mfccHopSeconds == nil,
+                   analysis != nil {
+                    Text("recording too short for MFCC")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
                 Spacer()
-                Text("us").font(.caption2).foregroundStyle(.green)
-                Text("peer").font(.caption2).foregroundStyle(.purple)
+                if laneMode == .waveform {
+                    Text("us").font(.caption2).foregroundStyle(.green)
+                    Text("peer").font(.caption2).foregroundStyle(.purple)
+                } else {
+                    Text("us (top) · peer (bottom)")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             }
             Chart {
                 if let s = hoverSample {
@@ -314,12 +344,57 @@ struct CallChartsView: View {
                 GeometryReader { geo in
                     let frame = geo[proxy.plotAreaFrame]
                     Canvas { ctx, _ in
-                        drawWaveform(ctx, in: frame, start: rec.startedAt)
+                        switch laneMode {
+                        case .waveform:
+                            drawWaveform(ctx, in: frame, start: rec.startedAt)
+                        case .mfcc:
+                            drawMFCC(ctx, in: frame, start: rec.startedAt)
+                        }
                     }
                 }
             }
             .chartOverlay { proxy in interactionLayer(proxy: proxy) }
             .frame(height: 104)
+        }
+    }
+
+    /// Blit the pre-rendered MFCC heatmaps, near end on top and far end
+    /// below, positioned so the images line up with the shared time axis.
+    ///
+    /// The images cover the whole recording, so zooming is expressed by
+    /// drawing them into a wider destination rect and clipping — no
+    /// re-rasterising per frame, which keeps playback smooth.
+    private func drawMFCC(_ ctx: GraphicsContext, in frame: CGRect,
+                          start: Date) {
+        guard let a = analysis, a.mfccHopSeconds != nil else {
+            let text = Text(analysis == nil ? "Analysing…"
+                                            : "Recording too short for MFCC")
+                .font(.caption).foregroundStyle(.secondary)
+            ctx.draw(text, at: CGPoint(x: frame.midX, y: frame.midY))
+            return
+        }
+        let lo = visibleDomain.lowerBound
+        let span = visibleDomain.upperBound.timeIntervalSince(lo)
+        guard span > 0, frame.width > 1, a.duration > 0 else { return }
+
+        // Where the recording's start and end land in the visible window.
+        let x0 = frame.minX + CGFloat((start.timeIntervalSince(lo) / span))
+                              * frame.width
+        let w  = CGFloat(a.duration / span) * frame.width
+        guard w.isFinite, w > 0 else { return }
+
+        let gap: CGFloat = 3
+        let laneH = (frame.height - gap) / 2
+        var c = ctx
+        c.clip(to: Path(frame))
+        if let near = a.mfccNear {
+            c.draw(Image(decorative: near, scale: 1),
+                   in: CGRect(x: x0, y: frame.minY, width: w, height: laneH))
+        }
+        if let far = a.mfccFar {
+            c.draw(Image(decorative: far, scale: 1),
+                   in: CGRect(x: x0, y: frame.minY + laneH + gap,
+                              width: w, height: laneH))
         }
     }
 

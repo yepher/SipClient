@@ -67,6 +67,10 @@ In call log can click on the Call Chart and review the metrics for the entire ca
   artefact up against the jitter spike that caused it. Near end is drawn
   in the top half, far end in the bottom. The recording plays back with a
   playhead tracked across all three lanes; click any chart to move it.
+  The lane switches between **Waveform** (amplitude) and **MFCC** — a
+  mel-frequency cepstral heatmap, near end above and far end below, which
+  distinguishes speech from comfort noise, packet-loss fill and codec
+  artefacts that a waveform renders as indistinguishable wiggles.
 - **Shareable HTML export** — ⌘E in the chart window writes a single
   self-contained `.html` holding the charts, the waveform and the
   recording itself (inlined as a data URI). No CDN, no sibling files and

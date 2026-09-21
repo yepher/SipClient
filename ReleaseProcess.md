@@ -143,6 +143,14 @@ the command line, so it doesn't depend on this profile being saved.
 
 ## Cutting a release
 
+> **Do not run `xcodegen generate` once a release is under way.**
+> `make_release.sh` writes the version straight into `Sources/Info.plist`
+> with `plutil`, but that file is *generated* from `project.yml`, which
+> pins `CFBundleShortVersionString`. Regenerating the project mid-release
+> silently reverts the bump, and you notarize a build stamped with the
+> previous version. If you do need to regenerate, re-run the release
+> script afterwards — it re-applies the bump as its first phase.
+
 From the project root, on a clean `main`:
 
 ```sh

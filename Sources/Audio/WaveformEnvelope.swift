@@ -54,7 +54,16 @@ struct WaveformEnvelope {
             throw LoadError.tooLarge(bytes: size)
         }
 
-        let loaded = try WAVFile.read(url: url)
+        return try build(from: WAVFile.read(url: url),
+                         targetBucketSeconds: targetBucketSeconds,
+                         maxBuckets: maxBuckets)
+    }
+
+    /// Reduce already-loaded samples. Split out so a caller that needs
+    /// more than one analysis of the same recording reads the file once.
+    static func build(from loaded: WAVFile.Loaded,
+                      targetBucketSeconds: Double = 0.002,
+                      maxBuckets: Int = 200_000) throws -> WaveformEnvelope {
         let channels = max(1, Int(loaded.channels))
         let frameCount = loaded.samples.count / channels
         guard frameCount > 0, loaded.sampleRate > 0 else { throw LoadError.empty }

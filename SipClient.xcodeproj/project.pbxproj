@@ -16,6 +16,7 @@
 		0F44D246A854DE2C81A693F3 /* cor_h_x.c in Sources */ = {isa = PBXBuildFile; fileRef = 5656590185C2B133E679DFEE /* cor_h_x.c */; };
 		109B9E470D5A0BC672E8F4D2 /* c4t64fx.c in Sources */ = {isa = PBXBuildFile; fileRef = 4B0AFC62C398859BB46DAB0D /* c4t64fx.c */; };
 		11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */; };
+		1719EBEDD89A886840A973B7 /* RecordingAnalysis.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7C32B403CB0DED8112C629F /* RecordingAnalysis.swift */; };
 		17F1E7DF669B42928C4DC10F /* deemph.c in Sources */ = {isa = PBXBuildFile; fileRef = 001284B6A3FB2818508AC0C8 /* deemph.c */; };
 		1C6C8E389F4B99A9147302BE /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722404624DD4078B22044E6C /* Codec.swift */; };
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
@@ -48,6 +49,7 @@
 		6DB23C1A9A45D5E5428BD5BD /* AudioDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BA9EF93C60BEC12254D5D0 /* AudioDevices.swift */; };
 		6F1B51D4A60622323658E303 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A962465485642076004B5C /* UpdateController.swift */; };
 		71D7E8C3044419F66ADEADD0 /* dtx.c in Sources */ = {isa = PBXBuildFile; fileRef = 07FE458D6E8B1309ABD9B706 /* dtx.c */; };
+		75FD9DF177AAAC1FDBB9D70B /* MFCC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 98EC1711E98F8FEF4FCDD6BF /* MFCC.swift */; };
 		831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B361FCC5C7F35618659A5B /* AudioEngine.swift */; };
 		83D999FE009B5D0CDFDCBFD1 /* log2.c in Sources */ = {isa = PBXBuildFile; fileRef = EA158D02CCB75DA3C6C1CC08 /* log2.c */; };
 		88728A4D765F9999D5F384FF /* SIPCallExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD66C526924982942EDED118 /* SIPCallExport.swift */; };
@@ -198,6 +200,7 @@
 		93CBEEEE944B5F904E5DC7DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		93CCEEF305095DB9EB3C8A2C /* CallChartHTMLExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartHTMLExport.swift; sourceTree = "<group>"; };
 		9841B94E157467DEE85BB9E5 /* q_gain2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = q_gain2.c; sourceTree = "<group>"; };
+		98EC1711E98F8FEF4FCDD6BF /* MFCC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFCC.swift; sourceTree = "<group>"; };
 		99BA9EF93C60BEC12254D5D0 /* AudioDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevices.swift; sourceTree = "<group>"; };
 		9BEDEFC771C7AF3D8D8EE2A5 /* cnst.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cnst.h; sourceTree = "<group>"; };
 		9C21807F02050D9F57F198FE /* WaveformEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformEnvelope.swift; sourceTree = "<group>"; };
@@ -219,6 +222,7 @@
 		C084A4F4F5A22FEC9E6CE283 /* cmnMemory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cmnMemory.h; sourceTree = "<group>"; };
 		C3B361FCC5C7F35618659A5B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 		C426A839F5F8289979779377 /* SipClient-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SipClient-Bridging-Header.h"; sourceTree = "<group>"; };
+		C7C32B403CB0DED8112C629F /* RecordingAnalysis.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingAnalysis.swift; sourceTree = "<group>"; };
 		C8C1347B0C933674A442AAAD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		CA1F719BB1F6BD167E0C9A79 /* p_med_ol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = p_med_ol.c; sourceTree = "<group>"; };
 		CC8A56B48A1B633CCCD04662 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
@@ -350,7 +354,9 @@
 				8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */,
 				90C4A45FD677688E94478215 /* LevelMeter.swift */,
 				BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */,
+				98EC1711E98F8FEF4FCDD6BF /* MFCC.swift */,
 				D4B23E7163D706C29E69FF9E /* MicCapture.swift */,
+				C7C32B403CB0DED8112C629F /* RecordingAnalysis.swift */,
 				39488F44A1340DB65E68B525 /* SpeakerPlayback.swift */,
 				9C21807F02050D9F57F198FE /* WaveformEnvelope.swift */,
 				309E10E277E500AF96790CD4 /* WAVFile.swift */,
@@ -632,8 +638,10 @@
 				B4B8723BF2CA40093DB685B4 /* JitterBuffer.swift in Sources */,
 				FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */,
 				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
+				75FD9DF177AAAC1FDBB9D70B /* MFCC.swift in Sources */,
 				D13C2AB8F79E98D05C76A60F /* MicCapture.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
+				1719EBEDD89A886840A973B7 /* RecordingAnalysis.swift in Sources */,
 				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,
 				54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */,
 				B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */,
