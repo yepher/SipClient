@@ -13,6 +13,9 @@ extension CallChartHTMLExport {
                      nominal: String,
                      duration: String,
                      audioOffset: String,
+                     audioDuration: String,
+                     mfccNear: String,
+                     mfccFar: String,
                      ts: String,
                      ds: String,
                      js: String,
@@ -59,6 +62,12 @@ extension CallChartHTMLExport {
           color: var(--fg); cursor: pointer;
         }
         button:disabled { opacity: .45; cursor: default; }
+        .seg { display: inline-flex; border: 1px solid var(--grid);
+               border-radius: 6px; overflow: hidden; }
+        .seg button { border: 0; border-radius: 0; padding: 3px 11px; }
+        .seg button[aria-pressed="true"] {
+          background: var(--delta); color: #fff;
+        }
         .readout { font-variant-numeric: tabular-nums; min-height: 18px;
                    margin: 6px 0; font-size: 12px; }
         .readout .d { color: var(--delta); }
@@ -78,6 +87,7 @@ extension CallChartHTMLExport {
            controls resolution. */
         canvas { width: 100%; display: block; cursor: crosshair; height: 200px; }
         canvas#wave { height: 120px; }
+        canvas#wave.tall { height: 170px; }
         .note { color: var(--jitter); font-size: 12px; margin: 6px 0; }
         </style>
         </head>
@@ -95,9 +105,15 @@ extension CallChartHTMLExport {
         <div class="readout" id="readout">&nbsp;</div>
 
         <div class="lane" id="lane-wave">
-          <div class="label w">Audio &mdash;
-            <span class="swatch-near">us</span> /
-            <span class="swatch-far">peer</span></div>
+          <div class="label w" style="display:flex;align-items:center;gap:10px">
+            <span class="seg" id="mode">
+              <button id="mode-wave" aria-pressed="true">Waveform</button>
+              <button id="mode-mfcc" aria-pressed="false">MFCC</button>
+            </span>
+            <span id="lane-legend">Audio &mdash;
+              <span class="swatch-near">us</span> /
+              <span class="swatch-far">peer</span></span>
+          </div>
           <canvas id="wave"></canvas>
         </div>
         <div class="lane">
@@ -114,7 +130,20 @@ extension CallChartHTMLExport {
         const WAVE = \(wave);
         const AUDIO_SRC = \(audioSrc);
         const NOMINAL = \(nominal), DURATION = \(duration);
-        const AUDIO_OFFSET = \(audioOffset);
+        const AUDIO_OFFSET = \(audioOffset), AUDIO_DURATION = \(audioDuration);
+        const MFCC_NEAR_SRC = \(mfccNear), MFCC_FAR_SRC = \(mfccFar);
+
+        // The MFCC heatmaps arrive as PNGs and decode asynchronously, so
+        // redraw once each lands rather than blocking first paint on them.
+        let mfccNear = null, mfccFar = null;
+        const hasMFCC = !!MFCC_NEAR_SRC;
+        function loadImage(src, assign) {
+          if (!src) return;
+          const im = new Image();
+          im.onload = () => { assign(im); drawAll(); };
+          im.src = src;
+        }
+        let mode = "wave";
 
         const au = document.getElementById("au");
         if (AUDIO_SRC) { au.src = AUDIO_SRC; } else { au.style.display = "none"; }
@@ -319,8 +348,54 @@ extension CallChartHTMLExport {
           overlays(ctx, w, h);
         }
 
+        // Blit the heatmaps, positioned so they line up with the shared
+        // time axis. Zooming widens the destination rect and clips, so the
+        // images are never re-rasterised.
+        function drawMFCC() {
+          const cv = document.getElementById("wave");
+          const { ctx, w, h } = prep(cv);
+          const plotW = w - PAD_L, plotH = h - PAD_B - PAD_T;
+          const gap = 3, laneH = (plotH - gap) / 2;
+          const x0 = PAD_L + lerpX(AUDIO_OFFSET, plotW);
+          const iw = (AUDIO_DURATION / (hi - lo)) * plotW;
+
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(PAD_L, PAD_T, plotW, plotH);
+          ctx.clip();
+          ctx.imageSmoothingEnabled = false;
+          if (mfccNear) ctx.drawImage(mfccNear, x0, PAD_T, iw, laneH);
+          if (mfccFar) ctx.drawImage(mfccFar, x0, PAD_T + laneH + gap, iw, laneH);
+          ctx.restore();
+
+          if (!mfccNear && !mfccFar) {
+            ctx.fillStyle = css("--dim");
+            ctx.font = "12px system-ui, sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Decoding MFCC…", PAD_L + plotW / 2, PAD_T + plotH / 2);
+          }
+          overlays(ctx, w, h);
+        }
+
+        function setMode(m) {
+          mode = m;
+          // Twelve coefficient rows per channel need more vertical room
+          // than an amplitude envelope does.
+          document.getElementById("wave")
+                  .classList.toggle("tall", m === "mfcc");
+          document.getElementById("mode-wave")
+                  .setAttribute("aria-pressed", String(m === "wave"));
+          document.getElementById("mode-mfcc")
+                  .setAttribute("aria-pressed", String(m === "mfcc"));
+          document.getElementById("lane-legend").innerHTML = m === "wave"
+            ? 'Audio &mdash; <span class="swatch-near">us</span> / '
+              + '<span class="swatch-far">peer</span>'
+            : 'Mel-frequency cepstral coefficients &mdash; us (top), peer (bottom)';
+          drawAll();
+        }
+
         function drawAll() {
-          drawWave();
+          if (mode === "mfcc" && hasMFCC) drawMFCC(); else drawWave();
           drawSeries("delta", D, "--delta", NOMINAL * 2);
           drawSeries("jitter", J, "--jitter", 10);
           document.getElementById("reset").disabled =
@@ -385,6 +460,19 @@ extension CallChartHTMLExport {
         document.getElementById("reset").addEventListener("click", () => {
           lo = 0; hi = DURATION > 0 ? DURATION : 1; drawAll();
         });
+
+        if (hasMFCC) {
+          document.getElementById("mode-wave")
+                  .addEventListener("click", () => setMode("wave"));
+          document.getElementById("mode-mfcc")
+                  .addEventListener("click", () => setMode("mfcc"));
+          loadImage(MFCC_NEAR_SRC, im => { mfccNear = im; });
+          loadImage(MFCC_FAR_SRC, im => { mfccFar = im; });
+        } else {
+          // No recording, or too short to analyse — offering the switch
+          // would just dead-end.
+          document.getElementById("mode").style.display = "none";
+        }
 
         // Keep the playhead moving without redrawing when nothing is happening.
         let raf = null;

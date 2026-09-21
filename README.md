@@ -77,8 +77,10 @@ In call log can click on the Call Chart and review the metrics for the entire ca
   no network access, so it still works as an email attachment on a machine
   that has never seen this project. The exported page keeps hover
   readouts, drag-to-zoom, click-to-seek and playhead sync, and follows
-  light/dark. Recordings over 100 MB are left out rather than producing an
-  unshareable file, and the page says so.
+  light/dark, and carries the same **Waveform / MFCC** toggle as the app —
+  the heatmaps travel as PNGs, so the page shows exactly what was on
+  screen without recomputing anything. Recordings over 100 MB are left out
+  rather than producing an unshareable file, and the page says so.
 - **Scenarios** — scripted sequences of `waitForAnswer` / `wait` /
   `playClip` / `sendDTMF` / `hangup` that you can save and replay.
 - **Wire log** — every SIP message, RTP-stat sample, audio diagnostic, and

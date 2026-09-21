@@ -173,6 +173,8 @@ struct CallChartsView: View {
         isExporting = true
         let snap = snapshot
         let env = envelope
+        let near = analysis?.mfccNear
+        let far = analysis?.mfccFar
         let audio = recording?.url
         Task {
             // Base64'ing the recording is slow enough to freeze the window
@@ -180,6 +182,8 @@ struct CallChartsView: View {
             let result = await Task.detached(priority: .userInitiated) {
                 CallChartHTMLExport.build(snapshot: snap,
                                           envelope: env,
+                                          mfccNear: near,
+                                          mfccFar: far,
                                           audioURL: audio)
             }.value
             do {
@@ -354,7 +358,9 @@ struct CallChartsView: View {
                 }
             }
             .chartOverlay { proxy in interactionLayer(proxy: proxy) }
-            .frame(height: 104)
+            // MFCC needs the extra room: twelve coefficient rows per
+            // channel are unreadable at waveform height.
+            .frame(height: laneMode == .mfcc ? 160 : 104)
         }
     }
 

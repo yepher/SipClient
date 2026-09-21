@@ -1,4 +1,7 @@
+import CoreGraphics
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 
 /// Builds a single self-contained HTML file holding a call's charts, its
 /// waveform and the recording itself, so a call can be handed to someone
@@ -22,6 +25,8 @@ enum CallChartHTMLExport {
 
     static func build(snapshot: CallChartSnapshot,
                       envelope: WaveformEnvelope?,
+                      mfccNear: CGImage? = nil,
+                      mfccFar: CGImage? = nil,
                       audioURL: URL?) -> Result {
         let samples = snapshot.samples
         let callStart = samples.first?.at ?? snapshot.endedAt
@@ -42,8 +47,10 @@ enum CallChartHTMLExport {
         // is finer than any screen the export will be viewed on.
         var wave = "null"
         var audioOffset = 0.0
+        var audioDuration = 0.0
         if let env = envelope, let start = snapshot.recordingStartedAt {
             audioOffset = start.timeIntervalSince(callStart)
+            audioDuration = env.duration
             let target = 3000
             let step = max(1, env.buckets.count / target)
             var nMin = [String](), nMax = [String](), fMin = [String](), fMax = [String]()
@@ -72,6 +79,13 @@ enum CallChartHTMLExport {
             """
         }
 
+        // MFCC heatmaps travel as PNGs rather than as coefficients the
+        // page would have to re-render: these are the very images the app
+        // draws, so the export shows exactly what was on screen, and PNG
+        // squeezes a 12-row heatmap down to a few KB.
+        let mfccNearURI = mfccNear.flatMap(pngDataURI) ?? "null"
+        let mfccFarURI = mfccFar.flatMap(pngDataURI) ?? "null"
+
         // Audio, inlined as a data URI.
         var audioSrc = "null"
         var omitted: Int? = nil
@@ -95,6 +109,9 @@ enum CallChartHTMLExport {
             nominal: trim(snapshot.nominalDeltaMs, places: 2),
             duration: trim(duration, places: 4),
             audioOffset: trim(audioOffset, places: 4),
+            audioDuration: trim(audioDuration, places: 4),
+            mfccNear: mfccNearURI,
+            mfccFar: mfccFarURI,
             ts: ts.joined(separator: ","),
             ds: ds.joined(separator: ","),
             js: js.joined(separator: ","),
@@ -106,6 +123,19 @@ enum CallChartHTMLExport {
             } ?? ""
         )
         return Result(html: html, audioOmittedBytes: omitted)
+    }
+
+    /// PNG-encode a heatmap as a quoted data URI, or nil if it can't be
+    /// encoded.
+    private static func pngDataURI(_ image: CGImage) -> String? {
+        let out = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(
+                out, UTType.png.identifier as CFString, 1, nil)
+        else { return nil }
+        CGImageDestinationAddImage(dest, image, nil)
+        guard CGImageDestinationFinalize(dest) else { return nil }
+        return "\"data:image/png;base64,"
+             + (out as Data).base64EncodedString() + "\""
     }
 
     // MARK: - Number formatting
