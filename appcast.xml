@@ -7,6 +7,42 @@
         <language>en</language>
         <!-- bin/update_appcast.py inserts <item> entries above this line. -->
         <item>
+            <title>Version 0.1.0-b11</title>
+            <pubDate>Mon, 21 Sep 2026 16:33:32 +0000</pubDate>
+            <sparkle:shortVersionString>0.1.0-b11</sparkle:shortVersionString>
+            <sparkle:version>36</sparkle:version>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[<h3>New</h3>
+<ul>
+  <li><b>AMR-WB (G.722.2)</b> — all nine bitrate modes (6.60–23.85 kbit/s),
+      both RFC 4867 payload framings, dynamic payload-type negotiation and
+      a true 16 kHz RTP clock. Decoding uses the AMR-WB codec built into
+      macOS; encoding uses a vendored copy of vo-amrwbenc (Apache-2.0).</li>
+  <li><b>Receive jitter buffer</b> — reorders by RTP sequence number, fills
+      gaps with silence and smooths relays that batch-deliver packets.
+      Optional per profile, with an adjustable target depth.</li>
+  <li><b>Call recording</b> — capture a call to a stereo WAV with this
+      client on the left channel and the peer on the right. Can be armed
+      before the call so nothing is missed.</li>
+  <li><b>Waveform on the call charts</b> — a recorded call now shows its
+      audio alongside the inter-arrival and jitter charts, sharing the same
+      time axis and zoom, with playback and a synced playhead.</li>
+  <li><b>Shareable HTML export</b> — ⌘E in the chart window writes a single
+      self-contained page with the charts and the recording embedded, so a
+      call can be handed to someone who doesn't have the app.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+  <li>Dialer settings that hadn't been saved yet were ignored by inbound
+      calls and by scenarios — both read the last-saved profile. Unsaved
+      edits now apply everywhere.</li>
+  <li>Restored Sparkle auto-update, the <code>.sipcall</code> file
+      association and the app's bundle identifier, which had been dropped
+      from the generated Xcode project.</li>
+</ul>]]></description>
+            <enclosure url="https://github.com/yepher/SipClient/releases/download/release_0_1_0_b11/SipClient-0.1.0-b11.zip" length="5376602" type="application/octet-stream" sparkle:edSignature="7iqMnLx/4dz2aUk085VEIl6vD6/MHRYQrVwAOPUYvTysFjvGbC2OzeckjGL238yT2OU8OEthVhJfq6+jaI42CA=="/>
+        </item>
+        <item>
             <title>Version 0.1.0-b10</title>
             <pubDate>Fri, 01 May 2026 16:24:49 +0000</pubDate>
             <sparkle:shortVersionString>0.1.0-b10</sparkle:shortVersionString>
