@@ -13,6 +13,21 @@ final class AppState: ObservableObject {
     @Published var scenarios: [Scenario] = []
     @Published var profiles: [DialerProfile] = []
     @Published var selectedProfileID: UUID?
+
+    /// The dialer form's live settings, including edits the user hasn't
+    /// saved yet. DialerView mirrors its draft here on every change.
+    ///
+    /// Outbound calls never needed this — they're placed straight from
+    /// the form. Inbound calls and scenarios did: they used to read the
+    /// profile as last written to disk, so unsaved edits silently didn't
+    /// apply. Anything that configures a call from a profile should go
+    /// through `profileWithLiveEdits(id:)` rather than `profile(id:)`.
+    ///
+    /// Deliberately not `@Published`: nothing renders from it, and it is
+    /// rewritten on every keystroke in the dialer form. Publishing it
+    /// would fire `objectWillChange` for every view bound to AppState —
+    /// wire log, charts, in-call view — on each character typed.
+    private(set) var draftProfile: DialerProfile?
     @Published var selectedScenarioID: UUID?
     @Published var runningScenarioID: UUID?
     @Published var currentScenarioStep: Int?
@@ -72,6 +87,27 @@ final class AppState: ObservableObject {
     /// RTP send loop, which is useful for testing the peer's media
     /// timeout behaviour.
     private var currentSendSilenceWhileMuted: Bool = true
+
+    /// Profile settings captured at placeCall (outbound) or from
+    /// `profileWithLiveEdits` at INVITE time (inbound), for the
+    /// receive-side jitter buffer.
+    private var currentUseJitterBuffer: Bool = false
+    private var currentJitterTargetMs: Int = 80
+    /// Active jitter buffer for the in-flight call (nil when disabled).
+    private var jitterBuffer: JitterBuffer?
+
+    /// Stereo recorder for the in-flight call (nil when not recording).
+    private var callRecorder: CallRecorder?
+    /// True once the user asks to record, even before a call exists — the
+    /// recorder itself can't start until media attaches and we know the
+    /// negotiated sample rate, so arming lets you capture from the very
+    /// first packet instead of missing the start of the call.
+    @Published private(set) var callRecordingArmed = false
+    /// File currently being written, for the UI to show and reveal.
+    @Published private(set) var callRecordingURL: URL?
+    /// The most recently finished recording, carried into the call chart
+    /// snapshot so the charts can plot and play it back.
+    private var lastFinishedRecording: (url: URL, startedAt: Date)?
 
     init() {
         loadAudioLibrary()
@@ -158,6 +194,8 @@ final class AppState: ObservableObject {
         callInProgress = true
         callStatus = "Starting…"
         currentSendSilenceWhileMuted = config.sendSilenceWhileMuted
+        currentUseJitterBuffer = config.useJitterBuffer
+        currentJitterTargetMs = config.jitterBufferTargetMs
 
         let metrics = CallMetrics()
         callMetrics = metrics
@@ -312,12 +350,13 @@ final class AppState: ObservableObject {
             publicRTPPort = rtpSocket.localPort
         }
 
-        // Seed "send silence while muted" from the user's currently-
-        // selected dialer profile so muting on an inbound call respects
-        // the saved setting (this state is only otherwise set on
-        // placeCall or via the DialerView toggle).
-        if let p = profile(id: selectedProfileID) {
+        // Inbound calls never pass through placeCall, so seed the
+        // media settings from the selected profile here — including any
+        // edits the user has made but not saved.
+        if let p = profileWithLiveEdits(id: selectedProfileID) {
             currentSendSilenceWhileMuted = p.sendSilenceWhileMuted
+            currentUseJitterBuffer = p.useJitterBuffer
+            currentJitterTargetMs = max(20, min(500, p.jitterBufferTargetMs))
         }
 
         let call = InboundCall(
@@ -420,6 +459,11 @@ final class AppState: ObservableObject {
         // even when "send silence while muted" is off.
         applySuppressSendForCurrentMuteState()
 
+        // If the user armed recording before the call connected, start it
+        // now — this is the first moment we know the negotiated codec, and
+        // therefore the sample rate to record at.
+        if callRecordingArmed { beginCallRecording(on: rtp) }
+
         Task { @MainActor in
             // Start the engine with the mic tap installed BEFORE we let
             // RTP samples reach the playback path. If we let the player
@@ -446,21 +490,60 @@ final class AppState: ObservableObject {
             // Now wire up RTP receive → playback. By the time the first
             // RTP packet hits this callback, the engine is already
             // running with both input and output configured.
-            rtp.onPlaybackPCM = { [weak self] samples, arrivedAt in
-                guard let self else { return }
-                self.audioEngine.levelMeter.recordRecv(samples)
-                // Compute peak for first-audio detection + jitter math.
-                var peak: Int32 = 0
-                for s in samples {
-                    let v = Int32(s)
-                    let absV = v < 0 ? -v : v
-                    if absV > peak { peak = absV }
+            //
+            // Two paths from here:
+            //   (a) jitter buffer disabled: arrival drives playback
+            //       directly (legacy behaviour — speaker FIFO smooths
+            //       only what the AudioQueue's 4×20 ms preroll absorbs).
+            //   (b) jitter buffer enabled: arrival inserts into the JB,
+            //       and a steady ptime-cadenced ticker pulls reordered /
+            //       PLC'd frames into the speaker.
+            // Level meter + CallMetrics always run on arrival so that
+            // the jitter chart reflects network timing, not playout.
+            if self.currentUseJitterBuffer {
+                let jb = JitterBuffer(codec: rtp.codec,
+                                      ptimeMs: rtp.ptime,
+                                      targetMs: self.currentJitterTargetMs)
+                jb.onFrame = { [weak self] frame in
+                    Task { @MainActor in
+                        self?.deliverPlayback(frame)
+                    }
                 }
-                Task { @MainActor in
-                    // Pass the network-arrival timestamp through so
-                    // jitter math isn't poisoned by MainActor latency.
-                    self.callMetrics?.recordPacket(peak: peak, at: arrivedAt)
-                    self.audioEngine.enqueuePlayback(samples: samples)
+                jb.start()
+                self.jitterBuffer = jb
+                self.appendLog(.init(direction: .received, kind: .info,
+                    summary: "Jitter buffer enabled "
+                           + "(target \(self.currentJitterTargetMs) ms, "
+                           + "ptime \(rtp.ptime) ms)"))
+                rtp.onPlaybackPCM = { [weak self, weak jb] samples, seq, ts, arrivedAt in
+                    guard let self else { return }
+                    self.audioEngine.levelMeter.recordRecv(samples)
+                    var peak: Int32 = 0
+                    for s in samples {
+                        let v = Int32(s)
+                        let absV = v < 0 ? -v : v
+                        if absV > peak { peak = absV }
+                    }
+                    Task { @MainActor in
+                        self.callMetrics?.recordPacket(peak: peak, at: arrivedAt)
+                    }
+                    jb?.insert(samples: samples, seq: seq,
+                               timestamp: ts, arrivedAt: arrivedAt)
+                }
+            } else {
+                rtp.onPlaybackPCM = { [weak self] samples, _, _, arrivedAt in
+                    guard let self else { return }
+                    self.audioEngine.levelMeter.recordRecv(samples)
+                    var peak: Int32 = 0
+                    for s in samples {
+                        let v = Int32(s)
+                        let absV = v < 0 ? -v : v
+                        if absV > peak { peak = absV }
+                    }
+                    Task { @MainActor in
+                        self.callMetrics?.recordPacket(peak: peak, at: arrivedAt)
+                        self.deliverPlayback(samples)
+                    }
                 }
             }
         }
@@ -496,7 +579,116 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Everything the far end sends reaches the speaker through here, so
+    /// it is also the one place the recorder needs to tap. Whether the
+    /// jitter buffer is in the path or not, this is what was heard.
+    private func deliverPlayback(_ samples: [Int16]) {
+        callRecorder?.appendFar(samples)
+        audioEngine.enqueuePlayback(samples: samples)
+    }
+
+    // MARK: - Call recording
+
+    /// Where call recordings are written.
+    var recordingsDirectory: URL {
+        let dir = appSupportDir.appendingPathComponent("Recordings", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    /// Arm/disarm recording. Armed before a call, it starts as soon as
+    /// media attaches; armed during one, it starts immediately.
+    func toggleCallRecording() {
+        if callRecordingArmed {
+            stopCallRecording()
+        } else {
+            callRecordingArmed = true
+            if let rtp = currentRTPSession {
+                beginCallRecording(on: rtp)
+            } else {
+                appendLog(.init(direction: .sent, kind: .info,
+                                summary: "Recording armed — starts when the call connects"))
+            }
+        }
+    }
+
+    /// Open the file and start capturing. Called from `attachAudio` (or
+    /// directly if armed mid-call).
+    private func beginCallRecording(on rtp: RTPSession) {
+        guard callRecorder == nil else { return }
+        let codec = rtp.codec
+        let stamp = Self.recordingStampFormatter.string(from: Date())
+        let url = recordingsDirectory
+            .appendingPathComponent("call-\(stamp).wav")
+        do {
+            let rec = try CallRecorder(url: url, sampleRate: codec.inputSampleRate)
+            callRecorder = rec
+            callRecordingURL = url
+            // Hold the recorder directly rather than reaching back through
+            // `self.callRecorder`: this fires on the RTP send task every
+            // ptime, and bouncing each frame to the MainActor just to read
+            // a property would be pure overhead. CallRecorder is Sendable
+            // and does its own locking.
+            rtp.onSentPCM = { [weak rec] pcm in rec?.appendNear(pcm) }
+            appendLog(.init(direction: .sent, kind: .info,
+                summary: "Recording to \(url.lastPathComponent) "
+                       + "(stereo, \(Int(codec.inputSampleRate)) Hz — "
+                       + "left = us, right = peer)"))
+        } catch {
+            callRecordingArmed = false
+            appendLog(.init(direction: .sent, kind: .error,
+                summary: "Could not start recording: \(error.localizedDescription)"))
+        }
+    }
+
+    /// Stop and finalise, whether the user asked or the call ended.
+    func stopCallRecording() {
+        callRecordingArmed = false
+        currentRTPSession?.onSentPCM = nil
+        guard let rec = callRecorder else { callRecordingURL = nil; return }
+        callRecorder = nil
+        let startedAt = rec.startedAt
+        if let done = rec.finish() {
+            lastFinishedRecording = (done.url, startedAt)
+            appendLog(.init(direction: .sent, kind: .info,
+                summary: String(format: "Recording saved: %@ (%.1f s)",
+                                done.url.lastPathComponent, done.seconds),
+                detail: "Stereo WAV — left channel is this client, right "
+                      + "channel is the peer.\n\n\(done.url.path)",
+                recordingURL: done.url))
+            callRecordingURL = done.url
+        } else {
+            callRecordingURL = nil
+        }
+    }
+
+    /// Show the finished recording in Finder.
+    func revealCallRecording() {
+        guard let url = callRecordingURL else { return }
+        revealInFinder(url)
+    }
+
+    /// Select a file in Finder, or fall back to opening the containing
+    /// folder if it has since been moved or deleted.
+    func revealInFinder(_ url: URL) {
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            NSWorkspace.shared.open(url.deletingLastPathComponent())
+        }
+    }
+
+    private static let recordingStampFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd-HHmmss"
+        return f
+    }()
+
     private func detachAudio() {
+        // Close the WAV first: the chart snapshot built below records a
+        // reference to it, and that reference should only ever point at a
+        // complete, playable file.
+        stopCallRecording()
         if let metrics = callMetrics {
             appendLog(.init(direction: .sent, kind: .info,
                             summary: metrics.summaryLine,
@@ -512,7 +704,9 @@ final class AppState: ObservableObject {
                     inviteAt: metrics.inviteAt,
                     answeredAt: metrics.answeredAt,
                     firstAudioAt: metrics.firstAudioAt,
-                    endedAt: Date()
+                    endedAt: Date(),
+                    recordingURL: lastFinishedRecording?.url,
+                    recordingStartedAt: lastFinishedRecording?.startedAt
                 )
                 storeCallChart(snapshot)
                 appendLog(.init(
@@ -531,6 +725,17 @@ final class AppState: ObservableObject {
         audioEngine.stopCallMode()
         rtpStatsTask?.cancel()
         rtpStatsTask = nil
+        if let jb = jitterBuffer {
+            let s = jb.snapshot()
+            jb.stop()
+            appendLog(.init(direction: .received, kind: .info,
+                summary: String(format:
+                    "Jitter buffer: produced=%llu plc=%llu droppedLate=%llu " +
+                    "droppedOverflow=%llu prerolls=%llu finalTarget=%dms jitter=%.1fms",
+                    s.produced, s.plcFrames, s.droppedLate, s.droppedOverflow,
+                    s.prerolls, s.targetMs, s.jitterMs)))
+        }
+        jitterBuffer = nil
         currentRTPSession = nil
         callConnected = false
     }
@@ -568,13 +773,32 @@ final class AppState: ObservableObject {
         ))
     }
 
-    /// Live update for the "send silence while muted" setting. Called
-    /// from the dialer toggle so a change *during* a call takes effect
-    /// on the active RTPSession immediately, instead of waiting for the
-    /// next placeCall to capture it.
-    func setSendSilenceWhileMuted(_ value: Bool) {
-        currentSendSilenceWhileMuted = value
-        applySuppressSendForCurrentMuteState()
+    /// Mirror the dialer form's current state — saved or not — into
+    /// AppState. Called on every edit, so inbound calls and scenarios see
+    /// what the user is actually looking at.
+    ///
+    /// This replaced a pair of per-setting push methods that each had to
+    /// be wired up by hand at the relevant toggle; every setting added
+    /// after them was quietly stale until saved.
+    func syncDraftProfile(_ profile: DialerProfile) {
+        draftProfile = profile
+        // `sendSilenceWhileMuted` is the one setting that also means
+        // something *mid*-call — flipping it is how you exercise a peer's
+        // media-timeout handling — so it applies to the live session at
+        // once rather than waiting for the next call. Everything else is
+        // read when the next call sets up its media.
+        if currentSendSilenceWhileMuted != profile.sendSilenceWhileMuted {
+            currentSendSilenceWhileMuted = profile.sendSilenceWhileMuted
+            applySuppressSendForCurrentMuteState()
+        }
+    }
+
+    /// The saved profile for `id`, overlaid with the dialer's unsaved
+    /// edits when the form is showing that same profile. Use this
+    /// anywhere a call is configured from a stored profile.
+    func profileWithLiveEdits(id: UUID?) -> DialerProfile? {
+        if let draft = draftProfile, draft.id == id { return draft }
+        return profile(id: id)
     }
 
     /// Push the combined "muted + don't send silence while muted" state
@@ -768,7 +992,7 @@ final class AppState: ObservableObject {
 
             // Place call from profile if specified.
             if let profileID = scenario.profileID,
-               let profile = self.profile(id: profileID),
+               let profile = self.profileWithLiveEdits(id: profileID),
                !self.callInProgress {
                 let cfg = profile.callConfig(authPassword: authPassword)
                 self.placeCall(config: cfg)

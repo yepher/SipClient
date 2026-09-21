@@ -13,6 +13,12 @@ struct CallChartSnapshot: Identifiable, Hashable {
     let answeredAt: Date?
     let firstAudioAt: Date?
     let endedAt: Date
+    /// Recording of this call, when one was made. The charts overlay its
+    /// waveform and offer playback.
+    let recordingURL: URL?
+    /// Wall-clock instant of the recording's first frame, which is what
+    /// maps a position in the file onto the charts' time axis.
+    let recordingStartedAt: Date?
 
     var firstSampleAt: Date? { samples.first?.at }
     var lastSampleAt: Date? { samples.last?.at }

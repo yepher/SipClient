@@ -1,10 +1,11 @@
 import Foundation
 
-/// Read/write 8 kHz, mono, 16-bit PCM WAV files.
+/// Read/write 16-bit PCM WAV files.
 ///
-/// We canonicalise everything to this format on import so clip playback is
-/// trivial: read all samples into memory, slice into 160-sample frames,
-/// G.711-encode, send.
+/// Clips are canonicalised to 8 kHz mono on import so playback is trivial:
+/// read all samples into memory, slice into 160-sample frames, G.711-encode,
+/// send. Call recordings use `StreamWriter` instead — stereo, at whatever
+/// rate the negotiated codec runs at, written incrementally.
 enum WAVFile {
     enum WAVError: Error, LocalizedError {
         case tooShort
@@ -88,18 +89,29 @@ enum WAVFile {
         return Loaded(sampleRate: sampleRate, channels: channels, samples: samples)
     }
 
-    /// Write 8 kHz mono 16-bit PCM samples to a WAV file.
+    /// Write 16-bit PCM samples to a WAV file. For stereo, `samples` must
+    /// already be interleaved (L, R, L, R…).
     static func write(samples: [Int16], to url: URL,
                       sampleRate: UInt32 = 8000, channels: UInt16 = 1) throws {
+        var out = header(sampleRate: sampleRate, channels: channels,
+                         dataLen: UInt32(samples.count * 2))
+        samples.withUnsafeBufferPointer {
+            out.append(UnsafeBufferPointer(start: $0.baseAddress, count: $0.count))
+        }
+        try out.write(to: url, options: .atomic)
+    }
+
+    /// The canonical 44-byte header. `dataLen` may be 0 for a streaming
+    /// write, in which case the length fields are patched on close.
+    static func header(sampleRate: UInt32, channels: UInt16,
+                       dataLen: UInt32) -> Data {
         let bitsPerSample: UInt16 = 16
         let byteRate: UInt32 = sampleRate * UInt32(channels) * UInt32(bitsPerSample) / 8
         let blockAlign: UInt16 = channels * bitsPerSample / 8
-        let dataLen = UInt32(samples.count * 2)
-        let riffLen = 36 + dataLen
 
         var out = Data()
         out.append("RIFF".data(using: .ascii)!)
-        out.append(le32(riffLen))
+        out.append(le32(36 + dataLen))
         out.append("WAVE".data(using: .ascii)!)
         out.append("fmt ".data(using: .ascii)!)
         out.append(le32(16))
@@ -111,10 +123,75 @@ enum WAVFile {
         out.append(le16(bitsPerSample))
         out.append("data".data(using: .ascii)!)
         out.append(le32(dataLen))
-        samples.withUnsafeBufferPointer {
-            out.append(UnsafeBufferPointer(start: $0.baseAddress, count: $0.count))
+        return out
+    }
+
+    /// Byte offset of the RIFF chunk length field within `header`.
+    private static let riffLenOffset: UInt64 = 4
+    /// Byte offset of the data chunk length field within `header`.
+    private static let dataLenOffset: UInt64 = 40
+
+    /// Incremental WAV writer: emits a placeholder header, appends PCM as
+    /// it arrives, then patches the two length fields on close.
+    ///
+    /// Call recording needs this rather than `write(samples:to:)` — half
+    /// an hour of stereo 16 kHz audio is ~115 MB, which we'd otherwise be
+    /// holding in memory for the whole call.
+    final class StreamWriter {
+        private let handle: FileHandle
+        private var dataBytes: UInt32 = 0
+        private var bytesSinceSync: UInt32 = 0
+        private var closed = false
+        /// Re-stamp the length fields roughly every quarter megabyte —
+        /// about 4 s of stereo 16 kHz audio. Without this, force-quitting
+        /// mid-call would leave a file whose header still claims zero
+        /// length, which most players refuse to open. This bounds the
+        /// damage to the last few seconds instead of the whole recording.
+        private static let syncEvery: UInt32 = 256 * 1024
+
+        let url: URL
+
+        init(url: URL, sampleRate: UInt32, channels: UInt16) throws {
+            self.url = url
+            guard FileManager.default.createFile(atPath: url.path, contents: nil) else {
+                throw WAVError.missingData
+            }
+            handle = try FileHandle(forWritingTo: url)
+            try handle.write(contentsOf: WAVFile.header(sampleRate: sampleRate,
+                                                        channels: channels,
+                                                        dataLen: 0))
         }
-        try out.write(to: url, options: .atomic)
+
+        func append(_ samples: [Int16]) throws {
+            guard !closed, !samples.isEmpty else { return }
+            let data = samples.withUnsafeBufferPointer { Data(buffer: $0) }
+            try handle.write(contentsOf: data)
+            dataBytes &+= UInt32(data.count)
+            bytesSinceSync &+= UInt32(data.count)
+            if bytesSinceSync >= Self.syncEvery {
+                try syncLengths()
+                bytesSinceSync = 0
+            }
+        }
+
+        /// Patch the RIFF and data lengths in place, then return the write
+        /// cursor to the end so appending can continue.
+        private func syncLengths() throws {
+            let end = try handle.offset()
+            try handle.seek(toOffset: WAVFile.riffLenOffset)
+            try handle.write(contentsOf: WAVFile.le32(36 &+ dataBytes))
+            try handle.seek(toOffset: WAVFile.dataLenOffset)
+            try handle.write(contentsOf: WAVFile.le32(dataBytes))
+            try handle.seek(toOffset: end)
+        }
+
+        /// Patch the lengths and close. Safe to call twice.
+        func close() throws {
+            guard !closed else { return }
+            closed = true
+            try syncLengths()
+            try handle.close()
+        }
     }
 
     private static func le16(_ v: UInt16) -> Data {

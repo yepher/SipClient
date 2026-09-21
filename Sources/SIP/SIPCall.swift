@@ -62,6 +62,7 @@ final class SIPCall: @unchecked Sendable {
     private(set) var remoteRTPPort: UInt16 = 0
     private(set) var negotiatedPT: UInt8 = 0
     private(set) var negotiatedCodec: CodecKind = .pcmu
+    private(set) var negotiatedCodecParams: CodecParams = CodecParams()
     private(set) var negotiatedPtime: Int = 20
     private(set) var negotiatedDTMFPT: UInt8?
 
@@ -249,6 +250,12 @@ final class SIPCall: @unchecked Sendable {
                 remoteRTPPort = ans.remotePort
                 negotiatedPT = ans.audioPT
                 negotiatedCodec = ans.codec
+                // We keep the bitrate mode we were configured to send at
+                // — that's our choice, not the peer's — but we must adopt
+                // whatever payload framing they answered with.
+                negotiatedCodecParams = CodecParams(
+                    amrwbMode: cfg.codecParams.amrwbMode,
+                    amrwbOctetAligned: ans.codecParams.amrwbOctetAligned)
                 negotiatedPtime = ans.ptime
                 negotiatedDTMFPT = ans.dtmfPT
                 inboundCrypto = ans.crypto
@@ -275,7 +282,13 @@ final class SIPCall: @unchecked Sendable {
 
                 answered = true
                 onAnswered?()
-                emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT) codec=\(negotiatedCodec.rtpmapName)")
+                var codecDetail = negotiatedCodec.rtpmapName
+                if negotiatedCodec == .amrwb {
+                    codecDetail += " \(negotiatedCodecParams.amrwbMode.displayName) "
+                        + (negotiatedCodecParams.amrwbOctetAligned
+                           ? "octet-aligned" : "bandwidth-efficient")
+                }
+                emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT) codec=\(codecDetail)")
 
             default:
                 if status >= 400 {
@@ -316,6 +329,7 @@ final class SIPCall: @unchecked Sendable {
                                     remotePort: remoteRTPPort,
                                     payloadType: negotiatedPT,
                                     codec: negotiatedCodec,
+                                    codecParams: negotiatedCodecParams,
                                     ptime: negotiatedPtime,
                                     outboundCrypto: outCrypto,
                                     inboundCrypto: inCrypto)
@@ -420,6 +434,7 @@ final class SIPCall: @unchecked Sendable {
         let contactURI = "sip:\(cfg.fromUser)@\(sipIP):\(sipPort)"
         let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort,
                                       codecs: cfg.codecs,
+                                      codecParams: cfg.codecParams,
                                       crypto: outboundCrypto)
 
         var s = ""
@@ -467,6 +482,7 @@ final class SIPCall: @unchecked Sendable {
         let contactURI = "sip:\(cfg.fromUser)@\(sipIP):\(sipPort)"
         let sdp = SDP.buildAudioOffer(rtpHost: rtpIP, rtpPort: rtpPort,
                                       codecs: cfg.codecs,
+                                      codecParams: cfg.codecParams,
                                       crypto: outboundCrypto)
 
         let authLine =

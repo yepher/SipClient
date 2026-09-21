@@ -515,6 +515,7 @@ final class InboundCall: @unchecked Sendable {
             rtpHost: publicRTPHost,
             rtpPort: publicRTPPort,
             codec: codec, codecPT: codecPT,
+            codecParams: offer.codecParams,
             dtmfPT: dtmfPT, ptime: ptime
         )
         let resp = buildResponse(code: 200, reason: "OK", sdp: answerSDP)
@@ -530,6 +531,7 @@ final class InboundCall: @unchecked Sendable {
             remotePort: offer.remotePort,
             payloadType: codecPT,
             codec: codec,
+            codecParams: offer.codecParams,
             ptime: ptime
         )
         rtp.dtmfPT = dtmfPT
@@ -680,6 +682,7 @@ final class InboundCall: @unchecked Sendable {
 
     private func buildAnswerSDP(rtpHost: String, rtpPort: UInt16,
                                 codec: CodecKind, codecPT: UInt8,
+                                codecParams: CodecParams,
                                 dtmfPT: UInt8?, ptime: Int) -> String {
         var s = ""
         s += "v=0\r\n"
@@ -691,6 +694,11 @@ final class InboundCall: @unchecked Sendable {
         if let dtmfPT { pts += " \(dtmfPT)" }
         s += "m=audio \(rtpPort) RTP/AVP \(pts)\r\n"
         s += "a=rtpmap:\(codecPT) \(codec.rtpmapLine)\r\n"
+        // Echo the offerer's codec parameters back — for AMR-WB this is
+        // what pins the payload framing for the rest of the call.
+        if let fmtp = codec.fmtpParams(codecParams) {
+            s += "a=fmtp:\(codecPT) \(fmtp)\r\n"
+        }
         if let dtmfPT {
             s += "a=rtpmap:\(dtmfPT) telephone-event/8000\r\n"
             s += "a=fmtp:\(dtmfPT) 0-16\r\n"

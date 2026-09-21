@@ -23,6 +23,9 @@ struct WireLogEntry: Identifiable, Codable {
     /// AppState — the wire log surfaces a "View In Call Chart" action
     /// that pops out the post-call charts.
     let callChartID: UUID?
+    /// When set, this entry references a finished call recording on disk
+    /// — the wire log surfaces a "Show in Finder" action for it.
+    let recordingURL: URL?
 
     init(
         id: UUID = UUID(),
@@ -31,7 +34,8 @@ struct WireLogEntry: Identifiable, Codable {
         kind: WireKind,
         summary: String,
         detail: String? = nil,
-        callChartID: UUID? = nil
+        callChartID: UUID? = nil,
+        recordingURL: URL? = nil
     ) {
         self.id = id
         self.timestamp = timestamp
@@ -40,5 +44,6 @@ struct WireLogEntry: Identifiable, Codable {
         self.summary = summary
         self.detail = detail
         self.callChartID = callChartID
+        self.recordingURL = recordingURL
     }
 }

@@ -179,6 +179,15 @@ struct WireLogView: View {
                     Text(entry.summary)
                         .font(.headline)
                     Spacer()
+                    if let url = entry.recordingURL {
+                        Button {
+                            appState.revealInFinder(url)
+                        } label: {
+                            Label("Show in Finder", systemImage: "folder")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .help(url.path)
+                    }
                     if let chartID = entry.callChartID,
                        appState.callChart(id: chartID) != nil {
                         Button {
@@ -224,6 +233,7 @@ struct WireLogView: View {
     }
 
     private func icon(for entry: WireLogEntry) -> String {
+        if entry.recordingURL != nil { return "waveform" }
         if entry.callChartID != nil { return "chart.xyaxis.line" }
         switch entry.kind {
         case .error: return "exclamationmark.triangle.fill"
@@ -235,6 +245,7 @@ struct WireLogView: View {
     }
 
     private func color(for entry: WireLogEntry) -> Color {
+        if entry.recordingURL != nil { return .accentColor }
         if entry.callChartID != nil { return .accentColor }
         switch entry.kind {
         case .error: return .red

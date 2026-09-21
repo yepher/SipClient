@@ -21,6 +21,15 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// Decoded with a default for older saved profiles.
     var codecs: [CodecKind] = [.pcmu, .pcma]
 
+    /// AMR-WB bitrate mode we encode at when AMR-WB is negotiated.
+    /// 12.65 kbit/s is the usual VoIP/VoLTE default. Ignored unless
+    /// AMR-WB is in `codecs` and the peer selects it.
+    var amrwbMode: AMRWBMode = .k1265
+    /// Offer `octet-align=1` (RFC 4867 octet-aligned framing). Turn off
+    /// to offer bandwidth-efficient framing, which is what most carrier
+    /// networks use. Either way we adopt whatever the peer answers.
+    var amrwbOctetAligned: Bool = true
+
     /// SIP signalling transport. UDP / TCP / TLS.
     var transportKind: SIPTransportKind = .udp
     /// Accept any TLS server certificate. Convenient for dev.
@@ -34,6 +43,14 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// stop RTP flow entirely — useful for testing the peer's media-
     /// timeout behaviour (LiveKit disconnects after 15 s of silence).
     var sendSilenceWhileMuted: Bool = true
+
+    /// Reorder + smooth incoming RTP through an adaptive jitter buffer
+    /// before playback. Off by default — testing relays that batch
+    /// deliver packets is a key reason to turn it on.
+    var useJitterBuffer: Bool = false
+    /// Initial / minimum jitter-buffer depth in milliseconds. The buffer
+    /// adapts upward from this floor based on observed RFC 3550 jitter.
+    var jitterBufferTargetMs: Int = 80
 
     /// Arbitrary additional SIP headers injected into outbound INVITEs.
     /// Empty `name` rows are ignored on the wire.
@@ -54,11 +71,15 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         localRTPPort: UInt16 = 10000,
         callDuration: Double = 30,
         codecs: [CodecKind] = [.pcmu, .pcma],
+        amrwbMode: AMRWBMode = .k1265,
+        amrwbOctetAligned: Bool = true,
         transportKind: SIPTransportKind = .udp,
         allowSelfSignedTLS: Bool = true,
         useSRTP: Bool = false,
         customHeaders: [SIPCustomHeader] = [],
-        sendSilenceWhileMuted: Bool = true
+        sendSilenceWhileMuted: Bool = true,
+        useJitterBuffer: Bool = false,
+        jitterBufferTargetMs: Int = 80
     ) {
         self.id = id
         self.name = name
@@ -74,11 +95,15 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.localRTPPort = localRTPPort
         self.callDuration = callDuration
         self.codecs = codecs
+        self.amrwbMode = amrwbMode
+        self.amrwbOctetAligned = amrwbOctetAligned
         self.transportKind = transportKind
         self.allowSelfSignedTLS = allowSelfSignedTLS
         self.useSRTP = useSRTP
         self.customHeaders = customHeaders
         self.sendSilenceWhileMuted = sendSilenceWhileMuted
+        self.useJitterBuffer = useJitterBuffer
+        self.jitterBufferTargetMs = jitterBufferTargetMs
     }
 
     /// Return a copy of this profile with a freshly-generated UUID.
@@ -94,10 +119,15 @@ struct DialerProfile: Identifiable, Codable, Hashable {
             localSIPPort: localSIPPort, localRTPPort: localRTPPort,
             callDuration: callDuration,
             codecs: codecs,
+            amrwbMode: amrwbMode,
+            amrwbOctetAligned: amrwbOctetAligned,
             transportKind: transportKind,
             allowSelfSignedTLS: allowSelfSignedTLS,
             useSRTP: useSRTP,
-            customHeaders: customHeaders
+            customHeaders: customHeaders,
+            sendSilenceWhileMuted: sendSilenceWhileMuted,
+            useJitterBuffer: useJitterBuffer,
+            jitterBufferTargetMs: jitterBufferTargetMs
         )
     }
 
@@ -119,6 +149,9 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.localRTPPort = try c.decode(UInt16.self, forKey: .localRTPPort)
         self.callDuration = try c.decode(Double.self, forKey: .callDuration)
         self.codecs = (try? c.decode([CodecKind].self, forKey: .codecs)) ?? [.pcmu, .pcma]
+        self.amrwbMode = (try? c.decode(AMRWBMode.self, forKey: .amrwbMode)) ?? .k1265
+        self.amrwbOctetAligned = (try? c.decode(Bool.self,
+                                                forKey: .amrwbOctetAligned)) ?? true
         self.transportKind = (try? c.decode(SIPTransportKind.self, forKey: .transportKind)) ?? .udp
         self.allowSelfSignedTLS = (try? c.decode(Bool.self, forKey: .allowSelfSignedTLS)) ?? true
         self.useSRTP = (try? c.decode(Bool.self, forKey: .useSRTP)) ?? false
@@ -126,6 +159,10 @@ struct DialerProfile: Identifiable, Codable, Hashable {
                                             forKey: .customHeaders)) ?? []
         self.sendSilenceWhileMuted = (try? c.decode(Bool.self,
                                                     forKey: .sendSilenceWhileMuted)) ?? true
+        self.useJitterBuffer = (try? c.decode(Bool.self,
+                                              forKey: .useJitterBuffer)) ?? false
+        self.jitterBufferTargetMs = (try? c.decode(Int.self,
+                                                   forKey: .jitterBufferTargetMs)) ?? 80
     }
 
     func callConfig(authPassword: String) -> SIPCallConfig {
@@ -141,11 +178,15 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.localSIPPort = localSIPPort
         cfg.localRTPPort = localRTPPort
         cfg.codecs = codecs.isEmpty ? [.pcmu, .pcma] : codecs
+        cfg.codecParams = CodecParams(amrwbMode: amrwbMode,
+                                      amrwbOctetAligned: amrwbOctetAligned)
         cfg.transportKind = transportKind
         cfg.allowSelfSignedTLS = allowSelfSignedTLS
         cfg.useSRTP = useSRTP
         cfg.customHeaders = customHeaders
         cfg.sendSilenceWhileMuted = sendSilenceWhileMuted
+        cfg.useJitterBuffer = useJitterBuffer
+        cfg.jitterBufferTargetMs = jitterBufferTargetMs
         return cfg
     }
 }

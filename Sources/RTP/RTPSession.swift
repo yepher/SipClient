@@ -19,6 +19,9 @@ final class RTPSession: @unchecked Sendable {
     let remotePort: UInt16
     var payloadType: UInt8
     let codec: CodecKind
+    /// Codec-specific negotiated parameters (AMR-WB bitrate mode and
+    /// payload framing). Ignored by the G.711 pair and G.722.
+    let codecParams: CodecParams
     /// Negotiated packet time in milliseconds (from a=ptime in the SDP
     /// answer, or 20 ms per RFC 3551 default).
     let ptime: Int
@@ -36,11 +39,21 @@ final class RTPSession: @unchecked Sendable {
     var micBuffer: FrameBuffer?
 
     /// Called from the receive task with decoded Int16 mono PCM at the
-    /// codec's native sample rate (8 kHz for G.711, 16 kHz for G.722).
+    /// codec's native sample rate (8 kHz for G.711, 16 kHz for G.722
+    /// and AMR-WB).
     /// `arrivedAt` is stamped immediately after `recvOnce` returns —
     /// before decode and the MainActor hop — so jitter math sees the
-    /// true network arrival time, not Swift scheduling delay.
-    var onPlaybackPCM: (@Sendable ([Int16], Date) -> Void)?
+    /// true network arrival time, not Swift scheduling delay. `seq` and
+    /// `timestamp` are passed through so a downstream jitter buffer can
+    /// reorder by extended sequence number and run RFC 3550 jitter math.
+    var onPlaybackPCM: (@Sendable ([Int16], UInt16, UInt32, Date) -> Void)?
+
+    /// Called with each frame of PCM just before it is encoded and sent.
+    /// This is the faithful "what we transmitted" tap: it sees injected
+    /// audio clips and comfort silence, which a microphone tap would miss
+    /// because clips are written straight into the mic FrameBuffer.
+    /// Fires on the send task, every ptime, for as long as audio flows.
+    var onSentPCM: (@Sendable ([Int16]) -> Void)?
 
     /// Called when an incoming RTP packet has the DTMF payload type.
     var onTelephoneEvent: (@Sendable (UInt8, UInt16) -> Void)?
@@ -89,6 +102,7 @@ final class RTPSession: @unchecked Sendable {
          remotePort: UInt16,
          payloadType: UInt8,
          codec: CodecKind,
+         codecParams: CodecParams = CodecParams(),
          ptime: Int = 20,
          outboundCrypto: SDPCryptoLine? = nil,
          inboundCrypto: SDPCryptoLine? = nil) {
@@ -97,9 +111,10 @@ final class RTPSession: @unchecked Sendable {
         self.remotePort = remotePort
         self.payloadType = payloadType
         self.codec = codec
+        self.codecParams = codecParams
         self.ptime = ptime
-        self.encoder = codec.makeEncoder()
-        self.decoder = codec.makeDecoder()
+        self.encoder = codec.makeEncoder(params: codecParams)
+        self.decoder = codec.makeDecoder(params: codecParams)
         let randSSRC = UInt32.random(in: 1...UInt32.max)
         self.ssrc = randSSRC
         self._seq = UInt16.random(in: 0...UInt16.max)
@@ -144,6 +159,7 @@ final class RTPSession: @unchecked Sendable {
                     continue
                 }
                 let pcm = self.micBuffer?.readFrame(size: frameSize) ?? silentPCM
+                self.onSentPCM?(pcm)
                 let frame = self.encoder.encode(pcm: pcm)
                 do {
                     try self.sendFrame(frame)
@@ -355,6 +371,10 @@ final class RTPSession: @unchecked Sendable {
         let hasExt = (rtp[0] & 0x10) != 0
         let pt = rtp[1] & 0x7F
         let seq = (UInt16(rtp[2]) << 8) | UInt16(rtp[3])
+        let ts = (UInt32(rtp[4]) << 24)
+               | (UInt32(rtp[5]) << 16)
+               | (UInt32(rtp[6]) << 8)
+               |  UInt32(rtp[7])
         let headerLen = 12 + 4 * cc
         var payloadStart = headerLen
         if hasExt && rtp.count >= headerLen + 4 {
@@ -372,7 +392,7 @@ final class RTPSession: @unchecked Sendable {
         }
 
         let pcm = decoder.decode(payload: payload)
-        onPlaybackPCM?(pcm, arrivedAt)
+        onPlaybackPCM?(pcm, seq, ts, arrivedAt)
     }
 
     // MARK: - DTMF helpers

@@ -45,6 +45,9 @@ struct DialerView: View {
         .navigationTitle("Dialer")
         .onAppear { syncFromSelection() }
         .onChange(of: appState.selectedProfileID) { _, _ in syncFromSelection() }
+        // Mirror every edit into AppState so unsaved changes apply to
+        // inbound calls and scenarios too, not just calls placed here.
+        .onChange(of: draft) { _, newDraft in appState.syncDraftProfile(newDraft) }
         .sheet(isPresented: $showSaveAsSheet) {
             saveAsSheet
         }
@@ -169,16 +172,47 @@ struct DialerView: View {
                             draft.sendSilenceWhileMuted = newValue
                             hasUnsavedChanges = true
                         }
-                        // Also push into AppState so an in-flight call
-                        // picks up the change immediately — without this
-                        // the toggle only mattered at placeCall time.
-                        appState.setSendSilenceWhileMuted(newValue)
                     }
                    ))
             if !draft.sendSilenceWhileMuted {
                 Text("With this off, muting halts RTP send entirely — the peer "
                      + "will see no inbound audio at all (useful for testing "
                      + "media-timeout behaviour like LiveKit's 15 s rule).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Toggle("Use receive jitter buffer (reorder + smooth)",
+                   isOn: Binding(
+                    get: { draft.useJitterBuffer },
+                    set: { newValue in
+                        if draft.useJitterBuffer != newValue {
+                            draft.useJitterBuffer = newValue
+                            hasUnsavedChanges = true
+                        }
+                    }
+                   ))
+            if draft.useJitterBuffer {
+                HStack {
+                    Text("Target depth")
+                    TextField("ms",
+                              value: Binding(
+                                get: { draft.jitterBufferTargetMs },
+                                set: { newValue in
+                                    let clamped = max(20, min(500, newValue))
+                                    if draft.jitterBufferTargetMs != clamped {
+                                        draft.jitterBufferTargetMs = clamped
+                                        hasUnsavedChanges = true
+                                    }
+                                }),
+                              format: .number)
+                        .frame(width: 60)
+                    Text("ms (adapts upward from this floor)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Reorders by RTP sequence and emits at fixed cadence. "
+                     + "Adds the target depth in latency. Takes effect on the "
+                     + "next call.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -244,7 +278,38 @@ struct DialerView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            if draft.codecs.contains(.amrwb) {
+                amrwbOptions
+            }
         }
+    }
+
+    /// AMR-WB only has knobs worth exposing when it's actually offered,
+    /// so these fold in under the codec list rather than taking their own
+    /// section.
+    @ViewBuilder
+    private var amrwbOptions: some View {
+        Divider()
+        Picker("AMR-WB bitrate", selection: Binding(
+            get: { draft.amrwbMode },
+            set: { draft.amrwbMode = $0; hasUnsavedChanges = true })) {
+            ForEach(AMRWBMode.allCases) { mode in
+                Text(mode.displayName).tag(mode)
+            }
+        }
+        Text("The rate we encode at. The peer may send us any rate — the "
+             + "decoder reads it per packet.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+        Toggle("Offer octet-aligned framing (octet-align=1)",
+               isOn: Binding(
+                get: { draft.amrwbOctetAligned },
+                set: { draft.amrwbOctetAligned = $0; hasUnsavedChanges = true }))
+        Text("Off offers bandwidth-efficient framing, which is what most "
+             + "carrier networks use. Either way we follow whatever the "
+             + "peer answers with.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
     }
 
     /// Toggle binding that adds/removes a codec from `draft.codecs`,
@@ -335,11 +400,15 @@ struct DialerView: View {
                         localSIPPort: p.localSIPPort, localRTPPort: p.localRTPPort,
                         callDuration: p.callDuration,
                         codecs: p.codecs,
+                        amrwbMode: p.amrwbMode,
+                        amrwbOctetAligned: p.amrwbOctetAligned,
                         transportKind: p.transportKind,
                         allowSelfSignedTLS: p.allowSelfSignedTLS,
                         useSRTP: p.useSRTP,
                         customHeaders: p.customHeaders,
-                        sendSilenceWhileMuted: p.sendSilenceWhileMuted
+                        sendSilenceWhileMuted: p.sendSilenceWhileMuted,
+                        useJitterBuffer: p.useJitterBuffer,
+                        jitterBufferTargetMs: p.jitterBufferTargetMs
                     )
                     appState.upsertProfile(p)
                     appState.selectProfile(p.id)
@@ -367,11 +436,9 @@ struct DialerView: View {
             draft = DialerProfile(name: "New Profile")
             hasUnsavedChanges = true
         }
-        // Push the current draft's "send silence while muted" into AppState
-        // so it's authoritative even when the user never toggles the
-        // switch (e.g. profile loaded from disk with the flag already off,
-        // or call is inbound rather than placed via this view).
-        appState.setSendSilenceWhileMuted(draft.sendSilenceWhileMuted)
+        // Seed the mirror on load/profile-switch. `.onChange(of: draft)`
+        // keeps it current from here on.
+        appState.syncDraftProfile(draft)
     }
 
     // MARK: - Profile import / export

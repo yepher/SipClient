@@ -29,6 +29,10 @@ struct SIPCallConfig {
     /// compatibility.
     var codecs: [CodecKind] = [.pcmu, .pcma]
 
+    /// Codec-specific parameters. Only AMR-WB reads these: which bitrate
+    /// mode we encode at, and which RFC 4867 payload framing we offer.
+    var codecParams: CodecParams = CodecParams()
+
     /// SIP signalling transport. UDP, TCP, or TLS.
     var transportKind: SIPTransportKind = .udp
     /// When TLS, accept any presented server certificate. Convenient for
@@ -46,4 +50,11 @@ struct SIPCallConfig {
     /// When true (default), muted mic still sends comfort-silence RTP.
     /// When false, muting halts RTP flow entirely.
     var sendSilenceWhileMuted: Bool = true
+
+    /// Smooth incoming RTP through an adaptive jitter buffer before
+    /// playback. Useful for relays that batch deliver packets.
+    var useJitterBuffer: Bool = false
+    /// Initial / minimum jitter-buffer depth in milliseconds. Adaptive
+    /// growth above this floor is driven by observed RFC 3550 jitter.
+    var jitterBufferTargetMs: Int = 80
 }

@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 import Charts
 
@@ -42,6 +43,36 @@ struct CallChartsView: View {
     /// readout above the charts.
     @State private var hoverDate: Date?
 
+    // MARK: Recording playback
+
+    /// Waveform of the call recording, nil until loaded (or if there is
+    /// no recording for this call).
+    @State private var envelope: WaveformEnvelope?
+    /// Why the waveform couldn't be drawn, if it couldn't.
+    @State private var waveformError: String?
+    @State private var player: AVAudioPlayer?
+    @State private var isPlaying = false
+    /// Playhead position in seconds from the start of the recording.
+    @State private var playheadSeconds: Double = 0
+    /// True while the export is being assembled, which can take a moment
+    /// on a long call because the recording is base64'd into the page.
+    @State private var isExporting = false
+
+    /// A recording exists and is still on disk.
+    private var recording: (url: URL, startedAt: Date)? {
+        guard let url = snapshot.recordingURL,
+              let start = snapshot.recordingStartedAt,
+              FileManager.default.fileExists(atPath: url.path)
+        else { return nil }
+        return (url, start)
+    }
+
+    /// Playhead as a point on the charts' shared time axis.
+    private var playheadDate: Date? {
+        guard let rec = recording else { return nil }
+        return rec.startedAt.addingTimeInterval(playheadSeconds)
+    }
+
     private var visibleDomain: ClosedRange<Date> {
         if let d = xDomain { return d }
         if let r = snapshot.fullRange { return r }
@@ -64,6 +95,10 @@ struct CallChartsView: View {
             header
             Divider()
             hoverReadout
+            if let rec = recording {
+                transport(rec)
+                waveformLane(rec)
+            }
             chart(
                 title: "Δ inter-arrival (ms) — ideal "
                      + "\(Int(snapshot.nominalDeltaMs)) ms",
@@ -84,6 +119,250 @@ struct CallChartsView: View {
             Spacer(minLength: 0)
         }
         .padding(12)
+        .task(id: snapshot.id) { await loadRecording() }
+        .onDisappear { player?.stop() }
+        .onReceive(Timer.publish(every: 1.0 / 30.0, on: .main, in: .common)
+                    .autoconnect()) { _ in
+            guard isPlaying, let p = player else { return }
+            playheadSeconds = p.currentTime
+            if !p.isPlaying { isPlaying = false }
+        }
+    }
+
+    // MARK: - Recording
+
+    private func loadRecording() async {
+        guard let rec = recording else { return }
+        player = try? AVAudioPlayer(contentsOf: rec.url)
+        player?.prepareToPlay()
+        // Scanning the whole file would block the window opening, so it
+        // happens off the main actor and the lane appears when ready.
+        let result = await Task.detached(priority: .userInitiated) {
+            () -> Result<WaveformEnvelope, Error> in
+            do { return .success(try WaveformEnvelope.load(url: rec.url)) }
+            catch { return .failure(error) }
+        }.value
+        switch result {
+        case .success(let env): envelope = env
+        case .failure(let err): waveformError = err.localizedDescription
+        }
+    }
+
+    // MARK: - Export
+
+    private func exportHTML() {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.html]
+        panel.nameFieldStringValue =
+            "call-charts-\(Self.fileStamp.string(from: snapshot.endedAt)).html"
+        panel.canCreateDirectories = true
+        panel.title = "Export Call Charts"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        isExporting = true
+        let snap = snapshot
+        let env = envelope
+        let audio = recording?.url
+        Task {
+            // Base64'ing the recording is slow enough to freeze the window
+            // on a long call, so build the page off the main actor.
+            let result = await Task.detached(priority: .userInitiated) {
+                CallChartHTMLExport.build(snapshot: snap,
+                                          envelope: env,
+                                          audioURL: audio)
+            }.value
+            do {
+                try result.html.write(to: url, atomically: true, encoding: .utf8)
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+                if let omitted = result.audioOmittedBytes {
+                    warn("Charts exported, but the recording was left out",
+                         "The recording is \(omitted / 1_000_000) MB, over the "
+                         + "limit for embedding in a shareable page. "
+                         + "Send the .wav alongside it instead.")
+                }
+            } catch {
+                warn("Could not write the export", error.localizedDescription)
+            }
+            isExporting = false
+        }
+    }
+
+    private func warn(_ message: String, _ detail: String) {
+        let a = NSAlert()
+        a.messageText = message
+        a.informativeText = detail
+        a.alertStyle = .warning
+        a.runModal()
+    }
+
+    private static let fileStamp: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "yyyy-MM-dd-HHmmss"
+        return f
+    }()
+
+    private func togglePlayback() {
+        guard let p = player else { return }
+        if p.isPlaying {
+            p.pause()
+            isPlaying = false
+        } else {
+            // Restart from the top once the end has been reached.
+            if p.currentTime >= p.duration - 0.05 { p.currentTime = 0 }
+            p.play()
+            isPlaying = true
+        }
+    }
+
+    /// Move the playhead to a point on the time axis, clamped to the file.
+    private func seek(to date: Date) {
+        guard let rec = recording, let p = player else { return }
+        let t = max(0, min(p.duration, date.timeIntervalSince(rec.startedAt)))
+        p.currentTime = t
+        playheadSeconds = t
+    }
+
+    private func clockString(_ seconds: Double) -> String {
+        let s = max(0, seconds)
+        return String(format: "%d:%05.2f", Int(s) / 60, s.truncatingRemainder(dividingBy: 60))
+    }
+
+    @ViewBuilder
+    private func transport(_ rec: (url: URL, startedAt: Date)) -> some View {
+        HStack(spacing: 10) {
+            Button { togglePlayback() } label: {
+                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                    .frame(width: 14)
+            }
+            .disabled(player == nil)
+            .keyboardShortcut(.space, modifiers: [])
+            .help(isPlaying ? "Pause (space)" : "Play recording (space)")
+
+            Text("\(clockString(playheadSeconds)) / "
+                 + "\(clockString(player?.duration ?? 0))")
+                .font(.caption)
+                .monospacedDigit()
+
+            Text("left = us · right = peer · click a chart to move the playhead")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Spacer()
+
+            Button {
+                NSWorkspace.shared.activateFileViewerSelecting([rec.url])
+            } label: {
+                Label("Show in Finder", systemImage: "folder")
+            }
+            .buttonStyle(.bordered)
+            .help(rec.url.path)
+        }
+    }
+
+    /// The waveform lane. Marks in the Chart are only the rules and the
+    /// zoom rectangle — the waveform itself is stroked into the chart
+    /// background, because one mark per pixel per channel would bring
+    /// Swift Charts to a crawl on a call of any length.
+    @ViewBuilder
+    private func waveformLane(_ rec: (url: URL, startedAt: Date)) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 12) {
+                Text("Audio").font(.caption2).foregroundStyle(.secondary)
+                if envelope == nil && waveformError == nil {
+                    Text("loading waveform…")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
+                if let err = waveformError {
+                    Text(err).font(.caption2).foregroundStyle(.orange)
+                }
+                Spacer()
+                Text("us").font(.caption2).foregroundStyle(.green)
+                Text("peer").font(.caption2).foregroundStyle(.purple)
+            }
+            Chart {
+                if let s = hoverSample {
+                    RuleMark(x: .value("Hover", s.at))
+                        .foregroundStyle(.gray.opacity(0.5))
+                        .lineStyle(StrokeStyle(lineWidth: 1))
+                }
+                if let p = playheadDate {
+                    RuleMark(x: .value("Playhead", p))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                }
+                if let drag = dragRange {
+                    RectangleMark(
+                        xStart: .value("Zoom start", min(drag.start, drag.end)),
+                        xEnd: .value("Zoom end", max(drag.start, drag.end)),
+                        yStart: nil, yEnd: nil
+                    )
+                    .foregroundStyle(.blue.opacity(0.15))
+                }
+            }
+            .chartXScale(domain: visibleDomain)
+            .chartYScale(domain: -1.0 ... 1.0)
+            .chartYAxis(.hidden)
+            .chartXAxis {
+                AxisMarks(values: .automatic(desiredCount: 6)) { _ in
+                    AxisGridLine()
+                    AxisTick()
+                    AxisValueLabel(format: .dateTime.minute().second())
+                }
+            }
+            .chartPlotStyle { $0.clipped() }
+            .chartBackground { proxy in
+                GeometryReader { geo in
+                    let frame = geo[proxy.plotAreaFrame]
+                    Canvas { ctx, _ in
+                        drawWaveform(ctx, in: frame, start: rec.startedAt)
+                    }
+                }
+            }
+            .chartOverlay { proxy in interactionLayer(proxy: proxy) }
+            .frame(height: 104)
+        }
+    }
+
+    /// Stroke one vertical min/max segment per horizontal pixel, near end
+    /// in the top half and far end in the bottom half.
+    private func drawWaveform(_ ctx: GraphicsContext, in frame: CGRect,
+                              start: Date) {
+        let nearMid = frame.minY + frame.height * 0.25
+        let farMid  = frame.minY + frame.height * 0.75
+        let half    = frame.height * 0.22
+
+        // Baselines, so silence still reads as a channel rather than a gap.
+        var base = Path()
+        base.move(to: CGPoint(x: frame.minX, y: nearMid))
+        base.addLine(to: CGPoint(x: frame.maxX, y: nearMid))
+        base.move(to: CGPoint(x: frame.minX, y: farMid))
+        base.addLine(to: CGPoint(x: frame.maxX, y: farMid))
+        ctx.stroke(base, with: .color(.gray.opacity(0.35)), lineWidth: 0.5)
+
+        guard let env = envelope, frame.width > 1 else { return }
+        let lo = visibleDomain.lowerBound
+        let span = visibleDomain.upperBound.timeIntervalSince(lo)
+        guard span > 0 else { return }
+
+        let steps = Int(frame.width)
+        var nearPath = Path(), farPath = Path()
+        let offset = lo.timeIntervalSince(start)
+        for px in 0..<steps {
+            let t0 = offset + span * Double(px) / Double(steps)
+            let t1 = offset + span * Double(px + 1) / Double(steps)
+            guard t1 > 0, t0 < env.duration else { continue }
+            let p = env.peaks(fromSeconds: max(0, t0),
+                              toSeconds: min(env.duration, t1))
+            let x = frame.minX + CGFloat(px) + 0.5
+            nearPath.move(to: CGPoint(x: x, y: nearMid - CGFloat(p.near.1) * half))
+            nearPath.addLine(to: CGPoint(x: x, y: nearMid - CGFloat(p.near.0) * half))
+            if !env.isMono {
+                farPath.move(to: CGPoint(x: x, y: farMid - CGFloat(p.far.1) * half))
+                farPath.addLine(to: CGPoint(x: x, y: farMid - CGFloat(p.far.0) * half))
+            }
+        }
+        ctx.stroke(nearPath, with: .color(.green.opacity(0.9)), lineWidth: 1)
+        ctx.stroke(farPath, with: .color(.purple.opacity(0.9)), lineWidth: 1)
     }
 
     @ViewBuilder
@@ -96,6 +375,15 @@ struct CallChartsView: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Button {
+                exportHTML()
+            } label: {
+                Label("Export HTML…", systemImage: "square.and.arrow.up")
+            }
+            .disabled(isExporting)
+            .help("Write a self-contained HTML file with the charts and "
+                  + "the recording embedded, for sharing")
+            .keyboardShortcut("e", modifiers: [.command])
             Button("Reset zoom") {
                 xDomain = nil
                 dragRange = nil
@@ -182,6 +470,11 @@ struct CallChartsView: View {
                     )
                     .foregroundStyle(lineColor)
                 }
+                if let p = playheadDate {
+                    RuleMark(x: .value("Playhead", p))
+                        .foregroundStyle(.white.opacity(0.85))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5))
+                }
                 if let s = hoverSample {
                     RuleMark(x: .value("Hover", s.at))
                         .foregroundStyle(.gray.opacity(0.5))
@@ -248,6 +541,12 @@ struct CallChartsView: View {
                     case .ended:
                         hoverDate = nil
                     }
+                }
+                // Hover already tracks the pointer, so a plain click can
+                // reuse it to place the playhead. The drag gesture below
+                // has a 4pt minimum, so this doesn't fight zooming.
+                .onTapGesture {
+                    if let h = hoverDate { seek(to: h) }
                 }
                 .gesture(
                     DragGesture(minimumDistance: 4)

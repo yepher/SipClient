@@ -2,6 +2,24 @@ import Foundation
 import Security
 
 enum SDP {
+    /// Assign RTP payload types to an offer's codec list. Codecs with an
+    /// RFC 3551 static type keep it; the rest are handed dynamic numbers
+    /// from 96 upward, skipping 101 which we reserve for telephone-event.
+    static func assignPayloadTypes(_ codecs: [CodecKind]) -> [(codec: CodecKind, pt: UInt8)] {
+        var out: [(codec: CodecKind, pt: UInt8)] = []
+        var nextDynamic: UInt8 = 96
+        for c in codecs {
+            if let pt = c.staticPayloadType {
+                out.append((c, pt))
+            } else {
+                while nextDynamic == 101 { nextDynamic &+= 1 }
+                out.append((c, nextDynamic))
+                nextDynamic &+= 1
+            }
+        }
+        return out
+    }
+
     /// Build an audio SDP offer advertising the given codec list (in
     /// preference order) plus telephone-event (PT 101) for DTMF. When
     /// `crypto` is non-nil, the m= line uses `RTP/SAVP` and an
@@ -9,9 +27,11 @@ enum SDP {
     static func buildAudioOffer(rtpHost: String,
                                 rtpPort: UInt16,
                                 codecs: [CodecKind],
+                                codecParams: CodecParams = CodecParams(),
                                 crypto: SDPCryptoLine? = nil) -> String {
         let list = codecs.isEmpty ? [CodecKind.pcmu, .pcma] : codecs
-        let pts = list.map { String($0.payloadType) }.joined(separator: " ")
+        let assigned = assignPayloadTypes(list)
+        let pts = assigned.map { String($0.pt) }.joined(separator: " ")
         let profile = crypto != nil ? "RTP/SAVP" : "RTP/AVP"
 
         var s = ""
@@ -21,8 +41,11 @@ enum SDP {
         s += "c=IN IP4 \(rtpHost)\r\n"
         s += "t=0 0\r\n"
         s += "m=audio \(rtpPort) \(profile) \(pts) 101\r\n"
-        for c in list {
-            s += "a=rtpmap:\(c.payloadType) \(c.rtpmapLine)\r\n"
+        for a in assigned {
+            s += "a=rtpmap:\(a.pt) \(a.codec.rtpmapLine)\r\n"
+            if let fmtp = a.codec.fmtpParams(codecParams) {
+                s += "a=fmtp:\(a.pt) \(fmtp)\r\n"
+            }
         }
         s += "a=rtpmap:101 telephone-event/8000\r\n"
         s += "a=fmtp:101 0-16\r\n"
@@ -40,6 +63,9 @@ enum SDP {
         var audioPT: UInt8 = 0
         /// Negotiated codec, resolved from the PT plus rtpmap entries.
         var codec: CodecKind = .pcmu
+        /// Codec-specific parameters read back from `a=fmtp`. Only
+        /// meaningful for AMR-WB today.
+        var codecParams: CodecParams = CodecParams()
         /// Telephone-event payload type if offered, else nil.
         var dtmfPT: UInt8?
         /// Peer's SDES crypto context if the answer enabled SRTP.
@@ -53,6 +79,7 @@ enum SDP {
     static func parseAnswer(_ body: String) -> Answer {
         var ans = Answer()
         var rtpmaps: [UInt8: String] = [:]
+        var fmtps: [UInt8: String] = [:]
         for line in body.components(separatedBy: "\r\n") {
             if line.hasPrefix("c=IN IP4 ") {
                 ans.remoteHost = String(line.dropFirst("c=IN IP4 ".count))
@@ -70,6 +97,12 @@ enum SDP {
                 let parts = rest.split(separator: " ", maxSplits: 1)
                 if parts.count == 2, let pt = UInt8(parts[0]) {
                     rtpmaps[pt] = String(parts[1])
+                }
+            } else if line.hasPrefix("a=fmtp:") {
+                let rest = String(line.dropFirst("a=fmtp:".count))
+                let parts = rest.split(separator: " ", maxSplits: 1)
+                if parts.count == 2, let pt = UInt8(parts[0]) {
+                    fmtps[pt] = String(parts[1])
                 }
             } else if line.hasPrefix("a=crypto:") {
                 if ans.crypto == nil {
@@ -90,20 +123,35 @@ enum SDP {
         }
         // Resolve the codec: prefer rtpmap name (handles both static and
         // dynamic PTs), fall back to the static PT table.
-        if let mapped = rtpmaps[ans.audioPT]?.split(separator: "/").first.map(String.init) {
-            switch mapped.uppercased() {
-            case "PCMU": ans.codec = .pcmu
-            case "PCMA": ans.codec = .pcma
-            case "G722": ans.codec = .g722
-            default:
-                if let c = CodecKind.fromStaticPayloadType(ans.audioPT) {
-                    ans.codec = c
-                }
-            }
+        if let mapped = rtpmaps[ans.audioPT]?.split(separator: "/").first.map(String.init),
+           let c = CodecKind.fromRTPMapName(mapped) {
+            ans.codec = c
         } else if let c = CodecKind.fromStaticPayloadType(ans.audioPT) {
             ans.codec = c
         }
+        if ans.codec == .amrwb {
+            // RFC 4867 §8.1: octet-align defaults to 0 (bandwidth-
+            // efficient) when the parameter is absent from the answer.
+            ans.codecParams.amrwbOctetAligned =
+                parseOctetAlign(fmtps[ans.audioPT]) ?? false
+        }
         return ans
+    }
+
+    /// Pull `octet-align` out of an AMR-WB fmtp parameter string.
+    /// Parameters are `;`-separated `key=value` pairs in any order, and
+    /// peers vary on spacing, so both are tolerated.
+    static func parseOctetAlign(_ fmtp: String?) -> Bool? {
+        guard let fmtp else { return nil }
+        for param in fmtp.split(separator: ";") {
+            let kv = param.split(separator: "=", maxSplits: 1)
+            guard kv.count == 2 else { continue }
+            let key = kv[0].trimmingCharacters(in: .whitespaces).lowercased()
+            guard key == "octet-align" else { continue }
+            let value = kv[1].trimmingCharacters(in: .whitespaces)
+            return value == "1"
+        }
+        return nil
     }
 }
 

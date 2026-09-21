@@ -7,44 +7,101 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AA01AA01AA01AA01AA01AA01 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = 128BF8762FA4F484006AD146 /* Sparkle */; };
+		01FB4CE5538226F7218CD750 /* residu.c in Sources */ = {isa = PBXBuildFile; fileRef = 2363D53AD9020A69BDE08611 /* residu.c */; };
+		075C50A2AAF53571B8B002FB /* SIPCustomHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCFAE1E073473CCB4A8A14FE /* SIPCustomHeader.swift */; };
+		0770A8FB29190F852A2C4411 /* pred_lt4.c in Sources */ = {isa = PBXBuildFile; fileRef = A357A6279D21793AAE0CF1E2 /* pred_lt4.c */; };
+		08405E2741770DC96154783E /* updt_tar.c in Sources */ = {isa = PBXBuildFile; fileRef = A112A2919CF5288AB4F1FBE1 /* updt_tar.c */; };
+		08B335A5F18EA2DFF97E93E4 /* SRTPCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2372149FFC7D5B794453C78 /* SRTPCrypto.swift */; };
+		0B356550209581175BD52C53 /* pit_shrp.c in Sources */ = {isa = PBXBuildFile; fileRef = DD6D7912C97EFC22FEDA7E71 /* pit_shrp.c */; };
+		0F44D246A854DE2C81A693F3 /* cor_h_x.c in Sources */ = {isa = PBXBuildFile; fileRef = 5656590185C2B133E679DFEE /* cor_h_x.c */; };
+		109B9E470D5A0BC672E8F4D2 /* c4t64fx.c in Sources */ = {isa = PBXBuildFile; fileRef = 4B0AFC62C398859BB46DAB0D /* c4t64fx.c */; };
 		11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */; };
+		17F1E7DF669B42928C4DC10F /* deemph.c in Sources */ = {isa = PBXBuildFile; fileRef = 001284B6A3FB2818508AC0C8 /* deemph.c */; };
+		1C6C8E389F4B99A9147302BE /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722404624DD4078B22044E6C /* Codec.swift */; };
 		1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9CEBEB471B82F2FA682B890 /* AudioClip.swift */; };
+		22DF4DABCC2489E354E14D7B /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = A64D041C0EEEA978FEF967F6 /* G722.swift */; };
+		259E21C7D3766FF030E33C7F /* convolve.c in Sources */ = {isa = PBXBuildFile; fileRef = 14BEF2818768E21F04A4072C /* convolve.c */; };
+		262445C8898E1362BA48429D /* gpclip.c in Sources */ = {isa = PBXBuildFile; fileRef = 7014F67E9B8CF37C05713494 /* gpclip.c */; };
+		26D549C59E0990A38A92E093 /* qpisf_2s.c in Sources */ = {isa = PBXBuildFile; fileRef = 571E1F08D72613137AB64A27 /* qpisf_2s.c */; };
+		288B760563016C7DDE4019BE /* wb_vad.c in Sources */ = {isa = PBXBuildFile; fileRef = 5E05881F9ECC37B1CFE907BF /* wb_vad.c */; };
+		292B983BAE9397CA71288582 /* stream.c in Sources */ = {isa = PBXBuildFile; fileRef = A19FF12E3A7DCC26A52B1BB6 /* stream.c */; };
+		2AB507DB765FD3BCFF699A9D /* homing.c in Sources */ = {isa = PBXBuildFile; fileRef = 244CABFE33BFE2957C38D742 /* homing.c */; };
+		3119C8974E0F49EE08897CEC /* WaveformEnvelope.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C21807F02050D9F57F198FE /* WaveformEnvelope.swift */; };
+		314857A8F0FD7538C3330D79 /* LICENSE-vo-amrwbenc.txt in Resources */ = {isa = PBXBuildFile; fileRef = 929A1B8B940F337F2289F388 /* LICENSE-vo-amrwbenc.txt */; };
+		39548822F3E85E8789C39BDE /* levinson.c in Sources */ = {isa = PBXBuildFile; fileRef = 3CAE7F690997189E66E90B04 /* levinson.c */; };
 		3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAB6086A05371C95986571AC /* WireLogView.swift */; };
 		3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */; };
 		3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */; };
 		41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3935F70332C886A6EE9DE5B9 /* ContentView.swift */; };
+		44D77592F38532F8FEACEB3D /* AMRWBCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107A379FD102EE16336023E7 /* AMRWBCodec.swift */; };
+		4C52CD4960CE8423466C2161 /* math_op.c in Sources */ = {isa = PBXBuildFile; fileRef = 3C078DCFCFAFA2F68841F0EB /* math_op.c */; };
+		4FEF92DD30589B21811FDD68 /* autocorr.c in Sources */ = {isa = PBXBuildFile; fileRef = B2F00C63728DD5631CB81808 /* autocorr.c */; };
 		505309C2041E2E6C17347638 /* Scenario.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8A56B48A1B633CCCD04662 /* Scenario.swift */; };
 		54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */ = {isa = PBXBuildFile; fileRef = F985791C1644D7A2C7699027 /* SIPCall.swift */; };
+		58B1D4773F6FED9D3E191104 /* preemph.c in Sources */ = {isa = PBXBuildFile; fileRef = 1CFEE3CC1EDC6CE3646440D3 /* preemph.c */; };
+		59EA7B0FC4C36F9F518659BF /* bits.c in Sources */ = {isa = PBXBuildFile; fileRef = 0ED32944996714F0FF5D6842 /* bits.c */; };
+		60BED97532B68F33E65F9E2A /* qisf_ns.c in Sources */ = {isa = PBXBuildFile; fileRef = 5B909C15367A73215B729E90 /* qisf_ns.c */; };
+		644D97113FDA3E09067B5454 /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = 350E93057B05379A6E96A7A7 /* util.c */; };
+		675B9B48F1C320F192E56CB1 /* CallChartHTMLPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B604CD178BD85050938F706 /* CallChartHTMLPage.swift */; };
+		6A5CC25F31516A3FED7A1309 /* scale.c in Sources */ = {isa = PBXBuildFile; fileRef = DFA237BE2760CA0D1DD5F936 /* scale.c */; };
+		6B1DCE8CC8FB67EFFCF37FEB /* SpeakerPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39488F44A1340DB65E68B525 /* SpeakerPlayback.swift */; };
 		6DB23C1A9A45D5E5428BD5BD /* AudioDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99BA9EF93C60BEC12254D5D0 /* AudioDevices.swift */; };
+		6F1B51D4A60622323658E303 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88A962465485642076004B5C /* UpdateController.swift */; };
+		71D7E8C3044419F66ADEADD0 /* dtx.c in Sources */ = {isa = PBXBuildFile; fileRef = 07FE458D6E8B1309ABD9B706 /* dtx.c */; };
 		831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B361FCC5C7F35618659A5B /* AudioEngine.swift */; };
+		83D999FE009B5D0CDFDCBFD1 /* log2.c in Sources */ = {isa = PBXBuildFile; fileRef = EA158D02CCB75DA3C6C1CC08 /* log2.c */; };
+		88728A4D765F9999D5F384FF /* SIPCallExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD66C526924982942EDED118 /* SIPCallExport.swift */; };
+		899084DFC23FAB070BBFBA90 /* CallMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51871A7C471D2FC18FC992FB /* CallMetrics.swift */; };
+		8CAF865B0D52EFEDDD0EBE4D /* oper_32b.c in Sources */ = {isa = PBXBuildFile; fileRef = 83D2C7BFF15FB4F91198075E /* oper_32b.c */; };
+		8F4B18D1FD9B2E71DA870561 /* voAMRWBEnc.c in Sources */ = {isa = PBXBuildFile; fileRef = D5D2437B306C2C7E3FB3ED6E /* voAMRWBEnc.c */; };
+		916D3CB574F157DFA74714CD /* StreamSIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = B69CE0C2D2DCA5B041D45817 /* StreamSIPTransport.swift */; };
 		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
+		9AC1623570C7E375A29BA782 /* CallChartsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CC3C51693085315029DDE5 /* CallChartsWindow.swift */; };
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
-		A11A11A11A11A11A11A11A11 /* CallChartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */; };
-		A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */; };
-		A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */; };
+		A0BFBF66631FF28EC6038E8E /* int_lpc.c in Sources */ = {isa = PBXBuildFile; fileRef = 1273962C69CAE6578E5F0384 /* int_lpc.c */; };
+		A44E75A726BE1D7DD247B7A1 /* hp400.c in Sources */ = {isa = PBXBuildFile; fileRef = 2C457471B758CC853028A663 /* hp400.c */; };
+		A61E9B9DAA877A87B08A33FA /* p_med_ol.c in Sources */ = {isa = PBXBuildFile; fileRef = CA1F719BB1F6BD167E0C9A79 /* p_med_ol.c */; };
+		A8AB95AF00452EFE42086B16 /* lp_dec2.c in Sources */ = {isa = PBXBuildFile; fileRef = 07880CCB47FF26FAD7C7644C /* lp_dec2.c */; };
+		A91D5C63E03FDC7B517BF4AA /* SRTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3843278F85432512667A61EE /* SRTP.swift */; };
 		AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271F8A36FC146836643F90C1 /* SIPMessage.swift */; };
+		AE0E973719292BF9FB282431 /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 280AAB06C2559CEC15DC01D5 /* SIPTransport.swift */; };
 		B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 616C5DA24C5E19148C27D46D /* WireLogEntry.swift */; };
-		B30872CEF972812BD7BFAA28 /* SIPCustomHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */; };
-		B40983DFA083923CE8C0BB39 /* CallMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 828E7FC46E703B36AE49F68F /* CallMetrics.swift */; };
+		B260F1F36DB1CE7488440808 /* CallRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF0383AB34AE02CC7539F83 /* CallRecorder.swift */; };
 		B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091382AF4736A88FFCA6EB39 /* SDP.swift */; };
+		B4B8723BF2CA40093DB685B4 /* JitterBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8990ABD56665EF7F6BA02071 /* JitterBuffer.swift */; };
 		B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */; };
-		B5109A4EBB94934DBF1D5BC9 /* SIPCallExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 939F8FD58E8D5E3CB3CACE9F /* SIPCallExport.swift */; };
-		B6210AB5FCA0A45ED02E6CDB /* InboundListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = A4B0C1D2E3F4A5B6C7D8E9F0 /* InboundListener.swift */; };
+		B8F95DA2DB836C14018A0A12 /* weight_a.c in Sources */ = {isa = PBXBuildFile; fileRef = BC59303A23FB18AB0E993A27 /* weight_a.c */; };
+		BB2DADCF2EF67AC99F0DEDDE /* lag_wind.c in Sources */ = {isa = PBXBuildFile; fileRef = 28DDF77450ED8DA91C2CFBC9 /* lag_wind.c */; };
+		BBB2F09D34D4A35714289FC3 /* CallChartHTMLExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93CCEEF305095DB9EB3C8A2C /* CallChartHTMLExport.swift */; };
+		BFBB4D61959D0C117D0D8A5E /* isp_isf.c in Sources */ = {isa = PBXBuildFile; fileRef = 15FA9C0DEC17992BB43FBB10 /* isp_isf.c */; };
+		BFE4669144329CA9504EC12C /* pitch_f4.c in Sources */ = {isa = PBXBuildFile; fileRef = BD1F2EEC8A9743A63BD1F95C /* pitch_f4.c */; };
 		BFF4857501F381DE543C14E8 /* InCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77B44EE494E591B8E7A59BDB /* InCallView.swift */; };
-		C0D0E0F010203040506A7B8C /* Codec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E1F1020304050607A8B9CD /* Codec.swift */; };
-		C1D1E1F11203040506A7B8CD /* G722.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E2F2030405060708A9BACE /* G722.swift */; };
-		C2D3E4F50607080910111213 /* SRTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3E4F50607080910111214 /* SRTP.swift */; };
-		C33C33C33C33C33C33C33C33 /* CallChartsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */; };
-		C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60708091011121315 /* SRTPCrypto.swift */; };
+		C28E41260D0BEA9F8470C2C7 /* CallChartSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 774C9FDC5DB923A64A062460 /* CallChartSnapshot.swift */; };
+		C59537B329F828720C082767 /* q_gain2.c in Sources */ = {isa = PBXBuildFile; fileRef = 9841B94E157467DEE85BB9E5 /* q_gain2.c */; };
+		C5CCE06740558306163C6232 /* voicefac.c in Sources */ = {isa = PBXBuildFile; fileRef = 701C8C2A03213C4CAECA9EA1 /* voicefac.c */; };
 		C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3F7D22A8A46A1E2C92618A0 /* STUN.swift */; };
+		CA3BF56B58AE748239803D03 /* q_pulse.c in Sources */ = {isa = PBXBuildFile; fileRef = 4ECCA9BAA6F6DB20AE0DEED8 /* q_pulse.c */; };
+		CF4F51A0618F85A9D317D252 /* cmnMemory.c in Sources */ = {isa = PBXBuildFile; fileRef = B7FB9DFD8153BC7FA02064B7 /* cmnMemory.c */; };
+		D106B48EBFE261147E6C9748 /* mem_align.c in Sources */ = {isa = PBXBuildFile; fileRef = 2C7774EB5981B53DC51FC013 /* mem_align.c */; };
+		D13C2AB8F79E98D05C76A60F /* MicCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4B23E7163D706C29E69FF9E /* MicCapture.swift */; };
 		D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7085A2F81C837A2152219F /* AudioLibraryView.swift */; };
 		D49A264EF78E3B699591B6EF /* G711.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4920A5B0B76F41B91A524FBD /* G711.swift */; };
-		E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1020304050607080A0B0C0D /* SIPTransport.swift */; };
-		E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2030405060708090A0B0C0E /* StreamSIPTransport.swift */; };
-		E55E55E55E55E55E55E55E55 /* UpdateController.swift in Sources */ = {isa = PBXBuildFile; fileRef = F66F66F66F66F66F66F66F66 /* UpdateController.swift */; };
+		DC8D4FCFF1FC8897FD91284A /* hp_wsp.c in Sources */ = {isa = PBXBuildFile; fileRef = 6C2589AB8EC45904177010E9 /* hp_wsp.c */; };
+		DDC14EB7728252D3213A65ED /* random.c in Sources */ = {isa = PBXBuildFile; fileRef = 457D61CC80BEC17D9B47EA82 /* random.c */; };
+		DE3F575FF446E965096E4803 /* c2t64fx.c in Sources */ = {isa = PBXBuildFile; fileRef = DEF2EF0C7A9989557F32CA75 /* c2t64fx.c */; };
+		DE8722070F052C8F6DECD9CC /* g_pitch.c in Sources */ = {isa = PBXBuildFile; fileRef = 3CA3DB36C6BB377186988123 /* g_pitch.c */; };
+		E5C77FF696F2B33EFF5EDB87 /* syn_filt.c in Sources */ = {isa = PBXBuildFile; fileRef = 31B205F0E9463C496EC96B42 /* syn_filt.c */; };
 		E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C3FD7D41D5B05E05D014C3E /* DialerView.swift */; };
+		E822A1882A904D47CC87833B /* decim54.c in Sources */ = {isa = PBXBuildFile; fileRef = 6D82CF88153267EEB4140CE1 /* decim54.c */; };
 		E8C7A32B4A52557E427BCCE2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C8C1347B0C933674A442AAAD /* Assets.xcassets */; };
+		EAF81F3AD1B740A20774D1B6 /* az_isp.c in Sources */ = {isa = PBXBuildFile; fileRef = FFE1B3C2036FABB4616DAB1D /* az_isp.c */; };
+		ED9A1C9FF30D2B6C426B1A6E /* hp50.c in Sources */ = {isa = PBXBuildFile; fileRef = 1608EBBC5643132BC94ADA2A /* hp50.c */; };
+		EFBECD12B997C21F3DB9B807 /* NOTICE-vo-amrwbenc.txt in Resources */ = {isa = PBXBuildFile; fileRef = 573B6613EA5448C7998D4971 /* NOTICE-vo-amrwbenc.txt */; };
+		EFDC88B6B481388670D9D5E0 /* hp6k.c in Sources */ = {isa = PBXBuildFile; fileRef = 8E901F9BF27829F837B34F68 /* hp6k.c */; };
+		F1142E76E22374571AD2113D /* wrapper.c in Sources */ = {isa = PBXBuildFile; fileRef = 614E82CFD031372BE247F2D0 /* wrapper.c */; };
+		F6392718A19C37EB4BEABFEE /* isp_az.c in Sources */ = {isa = PBXBuildFile; fileRef = 2342AABC6D22DCE4E10B2904 /* isp_az.c */; };
+		F73415944FFC454B121C13D6 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = E286DC1BD19BA58EED92B355 /* Sparkle */; };
+		F74BEE9A928E8DC5CA7702A7 /* InboundListener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77820649937FE711A757AD2A /* InboundListener.swift */; };
 		F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23416B83463537AA96BCE1DF /* UDPSocket.swift */; };
 		F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 766643A131738D6EF1467CA3 /* SipClientApp.swift */; };
 		FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */; };
@@ -54,60 +111,156 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		001284B6A3FB2818508AC0C8 /* deemph.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = deemph.c; sourceTree = "<group>"; };
+		03E92CC8A8A6543819FF8C83 /* voAudio.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voAudio.h; sourceTree = "<group>"; };
+		059D8E896E179996EBA73209 /* cod_main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cod_main.h; sourceTree = "<group>"; };
+		07880CCB47FF26FAD7C7644C /* lp_dec2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lp_dec2.c; sourceTree = "<group>"; };
+		07FE458D6E8B1309ABD9B706 /* dtx.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = dtx.c; sourceTree = "<group>"; };
 		091382AF4736A88FFCA6EB39 /* SDP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SDP.swift; sourceTree = "<group>"; };
+		0AF0383AB34AE02CC7539F83 /* CallRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallRecorder.swift; sourceTree = "<group>"; };
 		0C3FD7D41D5B05E05D014C3E /* DialerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerView.swift; sourceTree = "<group>"; };
+		0ED32944996714F0FF5D6842 /* bits.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = bits.c; sourceTree = "<group>"; };
+		107A379FD102EE16336023E7 /* AMRWBCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AMRWBCodec.swift; sourceTree = "<group>"; };
+		1273962C69CAE6578E5F0384 /* int_lpc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = int_lpc.c; sourceTree = "<group>"; };
+		14BEF2818768E21F04A4072C /* convolve.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = convolve.c; sourceTree = "<group>"; };
+		15FA9C0DEC17992BB43FBB10 /* isp_isf.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = isp_isf.c; sourceTree = "<group>"; };
+		1608EBBC5643132BC94ADA2A /* hp50.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hp50.c; sourceTree = "<group>"; };
+		1912F582294F35EAB1301A50 /* voIndex.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voIndex.h; sourceTree = "<group>"; };
+		196395431E985DBF7BB03C82 /* q_pulse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = q_pulse.h; sourceTree = "<group>"; };
+		1CFEE3CC1EDC6CE3646440D3 /* preemph.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = preemph.c; sourceTree = "<group>"; };
+		218DF1CA30DB0CBBDE1D2AB4 /* voAAC.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voAAC.h; sourceTree = "<group>"; };
 		23416B83463537AA96BCE1DF /* UDPSocket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSocket.swift; sourceTree = "<group>"; };
+		2342AABC6D22DCE4E10B2904 /* isp_az.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = isp_az.c; sourceTree = "<group>"; };
+		2363D53AD9020A69BDE08611 /* residu.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = residu.c; sourceTree = "<group>"; };
+		244CABFE33BFE2957C38D742 /* homing.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = homing.c; sourceTree = "<group>"; };
 		271F8A36FC146836643F90C1 /* SIPMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPMessage.swift; sourceTree = "<group>"; };
+		280AAB06C2559CEC15DC01D5 /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
+		283D60289DB4024BC23207D4 /* mem_align.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = mem_align.h; sourceTree = "<group>"; };
+		28DDF77450ED8DA91C2CFBC9 /* lag_wind.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = lag_wind.c; sourceTree = "<group>"; };
+		2A256F531C4C6236284DCA0F /* p_med_o.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = p_med_o.h; sourceTree = "<group>"; };
+		2C457471B758CC853028A663 /* hp400.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hp400.c; sourceTree = "<group>"; };
+		2C7774EB5981B53DC51FC013 /* mem_align.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mem_align.c; sourceTree = "<group>"; };
+		303582B6DF55153507E74DD6 /* voAMRWB.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voAMRWB.h; sourceTree = "<group>"; };
 		309E10E277E500AF96790CD4 /* WAVFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WAVFile.swift; sourceTree = "<group>"; };
 		3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCallConfig.swift; sourceTree = "<group>"; };
+		31B205F0E9463C496EC96B42 /* syn_filt.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = syn_filt.c; sourceTree = "<group>"; };
+		350E93057B05379A6E96A7A7 /* util.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
+		3843278F85432512667A61EE /* SRTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTP.swift; sourceTree = "<group>"; };
 		3935F70332C886A6EE9DE5B9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		39488F44A1340DB65E68B525 /* SpeakerPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerPlayback.swift; sourceTree = "<group>"; };
+		3B604CD178BD85050938F706 /* CallChartHTMLPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartHTMLPage.swift; sourceTree = "<group>"; };
+		3C078DCFCFAFA2F68841F0EB /* math_op.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = math_op.c; sourceTree = "<group>"; };
+		3CA3DB36C6BB377186988123 /* g_pitch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = g_pitch.c; sourceTree = "<group>"; };
+		3CAE7F690997189E66E90B04 /* levinson.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = levinson.c; sourceTree = "<group>"; };
+		40711DD78DEC9B88D2D21E13 /* typedefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = typedefs.h; sourceTree = "<group>"; };
+		433A89170963C889F046AB9C /* log2.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log2.h; sourceTree = "<group>"; };
+		4441150EF0AFAD00E9848C4D /* acelp.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = acelp.h; sourceTree = "<group>"; };
+		44CC3C51693085315029DDE5 /* CallChartsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartsWindow.swift; sourceTree = "<group>"; };
+		457D61CC80BEC17D9B47EA82 /* random.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = random.c; sourceTree = "<group>"; };
+		46F0954C3278709130A04AB5 /* log2_tab.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = log2_tab.h; sourceTree = "<group>"; };
 		4920A5B0B76F41B91A524FBD /* G711.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G711.swift; sourceTree = "<group>"; };
+		4B0AFC62C398859BB46DAB0D /* c4t64fx.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = c4t64fx.c; sourceTree = "<group>"; };
+		4C697329373EF523BFB5D1DF /* stream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = stream.h; sourceTree = "<group>"; };
+		4E174AB5D9FB7695A169E686 /* oper_32b.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = oper_32b.h; sourceTree = "<group>"; };
+		4ECCA9BAA6F6DB20AE0DEED8 /* q_pulse.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = q_pulse.c; sourceTree = "<group>"; };
+		51871A7C471D2FC18FC992FB /* CallMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMetrics.swift; sourceTree = "<group>"; };
+		5656590185C2B133E679DFEE /* cor_h_x.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cor_h_x.c; sourceTree = "<group>"; };
+		571E1F08D72613137AB64A27 /* qpisf_2s.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = qpisf_2s.c; sourceTree = "<group>"; };
+		573B6613EA5448C7998D4971 /* NOTICE-vo-amrwbenc.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "NOTICE-vo-amrwbenc.txt"; sourceTree = "<group>"; };
+		5B909C15367A73215B729E90 /* qisf_ns.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = qisf_ns.c; sourceTree = "<group>"; };
+		5E05881F9ECC37B1CFE907BF /* wb_vad.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = wb_vad.c; sourceTree = "<group>"; };
+		60BA61841DF6F3219EB18F76 /* basic_op.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = basic_op.h; sourceTree = "<group>"; };
+		614E82CFD031372BE247F2D0 /* wrapper.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = wrapper.c; sourceTree = "<group>"; };
 		616C5DA24C5E19148C27D46D /* WireLogEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogEntry.swift; sourceTree = "<group>"; };
 		64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DialerProfile.swift; sourceTree = "<group>"; };
-		717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCustomHeader.swift; sourceTree = "<group>"; };
+		6526CB6D0C77470A04D62118 /* bits.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bits.h; sourceTree = "<group>"; };
+		69970E4832F7F757D603D658 /* voType.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voType.h; sourceTree = "<group>"; };
+		6C2589AB8EC45904177010E9 /* hp_wsp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hp_wsp.c; sourceTree = "<group>"; };
+		6D82CF88153267EEB4140CE1 /* decim54.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = decim54.c; sourceTree = "<group>"; };
+		7014F67E9B8CF37C05713494 /* gpclip.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = gpclip.c; sourceTree = "<group>"; };
+		701C8C2A03213C4CAECA9EA1 /* voicefac.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = voicefac.c; sourceTree = "<group>"; };
+		722404624DD4078B22044E6C /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
 		766643A131738D6EF1467CA3 /* SipClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SipClientApp.swift; sourceTree = "<group>"; };
+		774C9FDC5DB923A64A062460 /* CallChartSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartSnapshot.swift; sourceTree = "<group>"; };
+		77820649937FE711A757AD2A /* InboundListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundListener.swift; sourceTree = "<group>"; };
 		77B44EE494E591B8E7A59BDB /* InCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InCallView.swift; sourceTree = "<group>"; };
 		81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScenariosView.swift; sourceTree = "<group>"; };
-		828E7FC46E703B36AE49F68F /* CallMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallMetrics.swift; sourceTree = "<group>"; };
+		83D2C7BFF15FB4F91198075E /* oper_32b.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = oper_32b.c; sourceTree = "<group>"; };
+		84770B6C4B04B45515AC45ED /* wb_vad.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wb_vad.h; sourceTree = "<group>"; };
 		867E2734C4684D7FA23C7484 /* SipClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SipClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		870E108A8160DE7FB9BB4AB1 /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
+		88A962465485642076004B5C /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
+		8990ABD56665EF7F6BA02071 /* JitterBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JitterBuffer.swift; sourceTree = "<group>"; };
+		8E901F9BF27829F837B34F68 /* hp6k.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hp6k.c; sourceTree = "<group>"; };
 		8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameBuffer.swift; sourceTree = "<group>"; };
 		90C4A45FD677688E94478215 /* LevelMeter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelMeter.swift; sourceTree = "<group>"; };
-		939F8FD58E8D5E3CB3CACE9F /* SIPCallExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCallExport.swift; sourceTree = "<group>"; };
+		929A1B8B940F337F2289F388 /* LICENSE-vo-amrwbenc.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "LICENSE-vo-amrwbenc.txt"; sourceTree = "<group>"; };
 		93CBEEEE944B5F904E5DC7DB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		93CCEEF305095DB9EB3C8A2C /* CallChartHTMLExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartHTMLExport.swift; sourceTree = "<group>"; };
+		9841B94E157467DEE85BB9E5 /* q_gain2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = q_gain2.c; sourceTree = "<group>"; };
 		99BA9EF93C60BEC12254D5D0 /* AudioDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevices.swift; sourceTree = "<group>"; };
-		A4B0C1D2E3F4A5B6C7D8E9F0 /* InboundListener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundListener.swift; sourceTree = "<group>"; };
+		9BEDEFC771C7AF3D8D8EE2A5 /* cnst.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cnst.h; sourceTree = "<group>"; };
+		9C21807F02050D9F57F198FE /* WaveformEnvelope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WaveformEnvelope.swift; sourceTree = "<group>"; };
+		A112A2919CF5288AB4F1FBE1 /* updt_tar.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = updt_tar.c; sourceTree = "<group>"; };
+		A19FF12E3A7DCC26A52B1BB6 /* stream.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = stream.c; sourceTree = "<group>"; };
+		A357A6279D21793AAE0CF1E2 /* pred_lt4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pred_lt4.c; sourceTree = "<group>"; };
+		A64D041C0EEEA978FEF967F6 /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
 		AA55B20DDD93EA0D027570E3 /* InboundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InboundView.swift; sourceTree = "<group>"; };
 		AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RTPSession.swift; sourceTree = "<group>"; };
-		B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartSnapshot.swift; sourceTree = "<group>"; };
-		B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
-		B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerPlayback.swift; sourceTree = "<group>"; };
+		AD66C526924982942EDED118 /* SIPCallExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCallExport.swift; sourceTree = "<group>"; };
+		B22C4059A4534C63D71A9832 /* voMem.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voMem.h; sourceTree = "<group>"; };
+		B2F00C63728DD5631CB81808 /* autocorr.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = autocorr.c; sourceTree = "<group>"; };
+		B69CE0C2D2DCA5B041D45817 /* StreamSIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSIPTransport.swift; sourceTree = "<group>"; };
+		B7FB9DFD8153BC7FA02064B7 /* cmnMemory.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = cmnMemory.c; sourceTree = "<group>"; };
 		BAB6086A05371C95986571AC /* WireLogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireLogView.swift; sourceTree = "<group>"; };
+		BC59303A23FB18AB0E993A27 /* weight_a.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = weight_a.c; sourceTree = "<group>"; };
+		BD1F2EEC8A9743A63BD1F95C /* pitch_f4.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pitch_f4.c; sourceTree = "<group>"; };
 		BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockedSampleBuffer.swift; sourceTree = "<group>"; };
+		C084A4F4F5A22FEC9E6CE283 /* cmnMemory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cmnMemory.h; sourceTree = "<group>"; };
 		C3B361FCC5C7F35618659A5B /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		C426A839F5F8289979779377 /* SipClient-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SipClient-Bridging-Header.h"; sourceTree = "<group>"; };
 		C8C1347B0C933674A442AAAD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		CA1F719BB1F6BD167E0C9A79 /* p_med_ol.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = p_med_ol.c; sourceTree = "<group>"; };
 		CC8A56B48A1B633CCCD04662 /* Scenario.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Scenario.swift; sourceTree = "<group>"; };
-		D1E1F1020304050607A8B9CD /* Codec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Codec.swift; sourceTree = "<group>"; };
-		D2E2F2030405060708A9BACE /* G722.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = G722.swift; sourceTree = "<group>"; };
-		D3E4F50607080910111214 /* SRTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTP.swift; sourceTree = "<group>"; };
+		CCFAE1E073473CCB4A8A14FE /* SIPCustomHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCustomHeader.swift; sourceTree = "<group>"; };
+		CE26DDA817DED72EB7574858 /* math_op.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = math_op.h; sourceTree = "<group>"; };
+		D2372149FFC7D5B794453C78 /* SRTPCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTPCrypto.swift; sourceTree = "<group>"; };
 		D3F7D22A8A46A1E2C92618A0 /* STUN.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = STUN.swift; sourceTree = "<group>"; };
-		D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CallChartsWindow.swift; sourceTree = "<group>"; };
-		D4E5F60708091011121315 /* SRTPCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTPCrypto.swift; sourceTree = "<group>"; };
+		D4B23E7163D706C29E69FF9E /* MicCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicCapture.swift; sourceTree = "<group>"; };
+		D5D2437B306C2C7E3FB3ED6E /* voAMRWBEnc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = voAMRWBEnc.c; sourceTree = "<group>"; };
+		DD6D7912C97EFC22FEDA7E71 /* pit_shrp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pit_shrp.c; sourceTree = "<group>"; };
+		DEF2EF0C7A9989557F32CA75 /* c2t64fx.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = c2t64fx.c; sourceTree = "<group>"; };
+		DFA237BE2760CA0D1DD5F936 /* scale.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = scale.c; sourceTree = "<group>"; };
+		E2F8C1F0D367B7F0C11C06CB /* dtx.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = dtx.h; sourceTree = "<group>"; };
+		E3C49DC2AE770A4B08B4B45F /* enc_if.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = enc_if.h; sourceTree = "<group>"; };
+		E83B441BB69BF9F493348F65 /* wb_vad_c.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = wb_vad_c.h; sourceTree = "<group>"; };
+		EA158D02CCB75DA3C6C1CC08 /* log2.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = log2.c; sourceTree = "<group>"; };
 		EE6F1B5011F182DC913B3203 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
-		F1020304050607080A0B0C0D /* SIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPTransport.swift; sourceTree = "<group>"; };
-		F2030405060708090A0B0C0E /* StreamSIPTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamSIPTransport.swift; sourceTree = "<group>"; };
-		F66F66F66F66F66F66F66F66 /* UpdateController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateController.swift; sourceTree = "<group>"; };
 		F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SipClient.entitlements; sourceTree = "<group>"; };
 		F985791C1644D7A2C7699027 /* SIPCall.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCall.swift; sourceTree = "<group>"; };
 		F9CEBEB471B82F2FA682B890 /* AudioClip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioClip.swift; sourceTree = "<group>"; };
+		FA423A78292430C20B170BE6 /* typedef.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = typedef.h; sourceTree = "<group>"; };
 		FC7085A2F81C837A2152219F /* AudioLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLibraryView.swift; sourceTree = "<group>"; };
+		FFE1B3C2036FABB4616DAB1D /* az_isp.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = az_isp.c; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		07D0BCDFCCD0B992CFDBF8D0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F73415944FFC454B121C13D6 /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		3F5ABD20F32FBB19BFC04C2C /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				FC7085A2F81C837A2152219F /* AudioLibraryView.swift */,
-				D44D44D44D44D44D44D44D44 /* CallChartsWindow.swift */,
+				44CC3C51693085315029DDE5 /* CallChartsWindow.swift */,
 				0C3FD7D41D5B05E05D014C3E /* DialerView.swift */,
 				AA55B20DDD93EA0D027570E3 /* InboundView.swift */,
 				77B44EE494E591B8E7A59BDB /* InCallView.swift */,
@@ -120,26 +273,46 @@
 		44186F1767AF19E7827440F3 /* RTP */ = {
 			isa = PBXGroup;
 			children = (
-				D1E1F1020304050607A8B9CD /* Codec.swift */,
+				722404624DD4078B22044E6C /* Codec.swift */,
 				4920A5B0B76F41B91A524FBD /* G711.swift */,
-				D2E2F2030405060708A9BACE /* G722.swift */,
+				A64D041C0EEEA978FEF967F6 /* G722.swift */,
+				8990ABD56665EF7F6BA02071 /* JitterBuffer.swift */,
 				AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */,
-				D3E4F50607080910111214 /* SRTP.swift */,
-				D4E5F60708091011121315 /* SRTPCrypto.swift */,
+				3843278F85432512667A61EE /* SRTP.swift */,
+				D2372149FFC7D5B794453C78 /* SRTPCrypto.swift */,
+				45B1E2F26EFD06DBD97C09BF /* AMRWB */,
 			);
 			path = RTP;
+			sourceTree = "<group>";
+		};
+		45B1E2F26EFD06DBD97C09BF /* AMRWB */ = {
+			isa = PBXGroup;
+			children = (
+				107A379FD102EE16336023E7 /* AMRWBCodec.swift */,
+				66A2E2B5B4455CBC0901273F /* vendor */,
+			);
+			path = AMRWB;
+			sourceTree = "<group>";
+		};
+		46B4A2805E29D67FF9657A13 /* amrwbenc */ = {
+			isa = PBXGroup;
+			children = (
+				7B46FB85476A269D93869AA0 /* inc */,
+				A74B4951F34B87E00D542450 /* src */,
+			);
+			path = amrwbenc;
 			sourceTree = "<group>";
 		};
 		4A8DFFE76B3FE37EDFEF13AC /* Models */ = {
 			isa = PBXGroup;
 			children = (
 				F9CEBEB471B82F2FA682B890 /* AudioClip.swift */,
-				B22B22B22B22B22B22B22B22 /* CallChartSnapshot.swift */,
-				828E7FC46E703B36AE49F68F /* CallMetrics.swift */,
+				774C9FDC5DB923A64A062460 /* CallChartSnapshot.swift */,
+				51871A7C471D2FC18FC992FB /* CallMetrics.swift */,
 				64BE1DFA1FEE1F88C935EB27 /* DialerProfile.swift */,
 				CC8A56B48A1B633CCCD04662 /* Scenario.swift */,
-				939F8FD58E8D5E3CB3CACE9F /* SIPCallExport.swift */,
-				717D6EB35D6F2A259D38E57E /* SIPCustomHeader.swift */,
+				AD66C526924982942EDED118 /* SIPCallExport.swift */,
+				CCFAE1E073473CCB4A8A14FE /* SIPCustomHeader.swift */,
 				616C5DA24C5E19148C27D46D /* WireLogEntry.swift */,
 			);
 			path = Models;
@@ -148,11 +321,24 @@
 		51512535A3376DF92DAAE31F /* Net */ = {
 			isa = PBXGroup;
 			children = (
-				F1020304050607080A0B0C0D /* SIPTransport.swift */,
-				F2030405060708090A0B0C0E /* StreamSIPTransport.swift */,
+				280AAB06C2559CEC15DC01D5 /* SIPTransport.swift */,
+				B69CE0C2D2DCA5B041D45817 /* StreamSIPTransport.swift */,
 				23416B83463537AA96BCE1DF /* UDPSocket.swift */,
 			);
 			path = Net;
+			sourceTree = "<group>";
+		};
+		66A2E2B5B4455CBC0901273F /* vendor */ = {
+			isa = PBXGroup;
+			children = (
+				E3C49DC2AE770A4B08B4B45F /* enc_if.h */,
+				929A1B8B940F337F2289F388 /* LICENSE-vo-amrwbenc.txt */,
+				573B6613EA5448C7998D4971 /* NOTICE-vo-amrwbenc.txt */,
+				614E82CFD031372BE247F2D0 /* wrapper.c */,
+				46B4A2805E29D67FF9657A13 /* amrwbenc */,
+				9A2C0F23A7F3954CBDBC5C13 /* common */,
+			);
+			path = vendor;
 			sourceTree = "<group>";
 		};
 		68D83C1C62A101EF2EBA890F /* Audio */ = {
@@ -160,14 +346,25 @@
 			children = (
 				99BA9EF93C60BEC12254D5D0 /* AudioDevices.swift */,
 				C3B361FCC5C7F35618659A5B /* AudioEngine.swift */,
+				0AF0383AB34AE02CC7539F83 /* CallRecorder.swift */,
 				8FC0AFDB79D5DE9990B0CA40 /* FrameBuffer.swift */,
 				90C4A45FD677688E94478215 /* LevelMeter.swift */,
 				BEDC1809CC72E2CBE5A0FECF /* LockedSampleBuffer.swift */,
-				B2C3D4E5F60718293A4B5C6D /* MicCapture.swift */,
-				B3C4D5E6F70819293A4B5C6E /* SpeakerPlayback.swift */,
+				D4B23E7163D706C29E69FF9E /* MicCapture.swift */,
+				39488F44A1340DB65E68B525 /* SpeakerPlayback.swift */,
+				9C21807F02050D9F57F198FE /* WaveformEnvelope.swift */,
 				309E10E277E500AF96790CD4 /* WAVFile.swift */,
 			);
 			path = Audio;
+			sourceTree = "<group>";
+		};
+		70A69F6A6CA24654D314C586 /* Export */ = {
+			isa = PBXGroup;
+			children = (
+				93CCEEF305095DB9EB3C8A2C /* CallChartHTMLExport.swift */,
+				3B604CD178BD85050938F706 /* CallChartHTMLPage.swift */,
+			);
+			path = Export;
 			sourceTree = "<group>";
 		};
 		791AFF7231B4EFE19C5C4129 = {
@@ -178,6 +375,41 @@
 			);
 			sourceTree = "<group>";
 		};
+		7B46FB85476A269D93869AA0 /* inc */ = {
+			isa = PBXGroup;
+			children = (
+				4441150EF0AFAD00E9848C4D /* acelp.h */,
+				60BA61841DF6F3219EB18F76 /* basic_op.h */,
+				6526CB6D0C77470A04D62118 /* bits.h */,
+				9BEDEFC771C7AF3D8D8EE2A5 /* cnst.h */,
+				059D8E896E179996EBA73209 /* cod_main.h */,
+				E2F8C1F0D367B7F0C11C06CB /* dtx.h */,
+				46F0954C3278709130A04AB5 /* log2_tab.h */,
+				433A89170963C889F046AB9C /* log2.h */,
+				870E108A8160DE7FB9BB4AB1 /* main.h */,
+				CE26DDA817DED72EB7574858 /* math_op.h */,
+				283D60289DB4024BC23207D4 /* mem_align.h */,
+				4E174AB5D9FB7695A169E686 /* oper_32b.h */,
+				2A256F531C4C6236284DCA0F /* p_med_o.h */,
+				196395431E985DBF7BB03C82 /* q_pulse.h */,
+				4C697329373EF523BFB5D1DF /* stream.h */,
+				FA423A78292430C20B170BE6 /* typedef.h */,
+				40711DD78DEC9B88D2D21E13 /* typedefs.h */,
+				E83B441BB69BF9F493348F65 /* wb_vad_c.h */,
+				84770B6C4B04B45515AC45ED /* wb_vad.h */,
+			);
+			path = inc;
+			sourceTree = "<group>";
+		};
+		9A2C0F23A7F3954CBDBC5C13 /* common */ = {
+			isa = PBXGroup;
+			children = (
+				B7FB9DFD8153BC7FA02064B7 /* cmnMemory.c */,
+				D36373FCEF2B702DCDE1A093 /* include */,
+			);
+			path = common;
+			sourceTree = "<group>";
+		};
 		9DA030596C81C06ECF2D181F /* Sources */ = {
 			isa = PBXGroup;
 			children = (
@@ -185,10 +417,12 @@
 				C8C1347B0C933674A442AAAD /* Assets.xcassets */,
 				3935F70332C886A6EE9DE5B9 /* ContentView.swift */,
 				93CBEEEE944B5F904E5DC7DB /* Info.plist */,
+				C426A839F5F8289979779377 /* SipClient-Bridging-Header.h */,
 				F7B9DDE975FD8B8CE3821B62 /* SipClient.entitlements */,
 				766643A131738D6EF1467CA3 /* SipClientApp.swift */,
-				F66F66F66F66F66F66F66F66 /* UpdateController.swift */,
+				88A962465485642076004B5C /* UpdateController.swift */,
 				68D83C1C62A101EF2EBA890F /* Audio */,
+				70A69F6A6CA24654D314C586 /* Export */,
 				4A8DFFE76B3FE37EDFEF13AC /* Models */,
 				51512535A3376DF92DAAE31F /* Net */,
 				44186F1767AF19E7827440F3 /* RTP */,
@@ -199,6 +433,60 @@
 			path = Sources;
 			sourceTree = "<group>";
 		};
+		A74B4951F34B87E00D542450 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				B2F00C63728DD5631CB81808 /* autocorr.c */,
+				FFE1B3C2036FABB4616DAB1D /* az_isp.c */,
+				0ED32944996714F0FF5D6842 /* bits.c */,
+				DEF2EF0C7A9989557F32CA75 /* c2t64fx.c */,
+				4B0AFC62C398859BB46DAB0D /* c4t64fx.c */,
+				14BEF2818768E21F04A4072C /* convolve.c */,
+				5656590185C2B133E679DFEE /* cor_h_x.c */,
+				6D82CF88153267EEB4140CE1 /* decim54.c */,
+				001284B6A3FB2818508AC0C8 /* deemph.c */,
+				07FE458D6E8B1309ABD9B706 /* dtx.c */,
+				3CA3DB36C6BB377186988123 /* g_pitch.c */,
+				7014F67E9B8CF37C05713494 /* gpclip.c */,
+				244CABFE33BFE2957C38D742 /* homing.c */,
+				6C2589AB8EC45904177010E9 /* hp_wsp.c */,
+				8E901F9BF27829F837B34F68 /* hp6k.c */,
+				1608EBBC5643132BC94ADA2A /* hp50.c */,
+				2C457471B758CC853028A663 /* hp400.c */,
+				1273962C69CAE6578E5F0384 /* int_lpc.c */,
+				2342AABC6D22DCE4E10B2904 /* isp_az.c */,
+				15FA9C0DEC17992BB43FBB10 /* isp_isf.c */,
+				28DDF77450ED8DA91C2CFBC9 /* lag_wind.c */,
+				3CAE7F690997189E66E90B04 /* levinson.c */,
+				EA158D02CCB75DA3C6C1CC08 /* log2.c */,
+				07880CCB47FF26FAD7C7644C /* lp_dec2.c */,
+				3C078DCFCFAFA2F68841F0EB /* math_op.c */,
+				2C7774EB5981B53DC51FC013 /* mem_align.c */,
+				83D2C7BFF15FB4F91198075E /* oper_32b.c */,
+				CA1F719BB1F6BD167E0C9A79 /* p_med_ol.c */,
+				DD6D7912C97EFC22FEDA7E71 /* pit_shrp.c */,
+				BD1F2EEC8A9743A63BD1F95C /* pitch_f4.c */,
+				A357A6279D21793AAE0CF1E2 /* pred_lt4.c */,
+				1CFEE3CC1EDC6CE3646440D3 /* preemph.c */,
+				9841B94E157467DEE85BB9E5 /* q_gain2.c */,
+				4ECCA9BAA6F6DB20AE0DEED8 /* q_pulse.c */,
+				5B909C15367A73215B729E90 /* qisf_ns.c */,
+				571E1F08D72613137AB64A27 /* qpisf_2s.c */,
+				457D61CC80BEC17D9B47EA82 /* random.c */,
+				2363D53AD9020A69BDE08611 /* residu.c */,
+				DFA237BE2760CA0D1DD5F936 /* scale.c */,
+				A19FF12E3A7DCC26A52B1BB6 /* stream.c */,
+				31B205F0E9463C496EC96B42 /* syn_filt.c */,
+				A112A2919CF5288AB4F1FBE1 /* updt_tar.c */,
+				350E93057B05379A6E96A7A7 /* util.c */,
+				D5D2437B306C2C7E3FB3ED6E /* voAMRWBEnc.c */,
+				701C8C2A03213C4CAECA9EA1 /* voicefac.c */,
+				5E05881F9ECC37B1CFE907BF /* wb_vad.c */,
+				BC59303A23FB18AB0E993A27 /* weight_a.c */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
 		C8A19FCD91EC6151B540FD3B /* Products */ = {
 			isa = PBXGroup;
 			children = (
@@ -207,10 +495,24 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D36373FCEF2B702DCDE1A093 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				C084A4F4F5A22FEC9E6CE283 /* cmnMemory.h */,
+				218DF1CA30DB0CBBDE1D2AB4 /* voAAC.h */,
+				303582B6DF55153507E74DD6 /* voAMRWB.h */,
+				03E92CC8A8A6543819FF8C83 /* voAudio.h */,
+				1912F582294F35EAB1301A50 /* voIndex.h */,
+				B22C4059A4534C63D71A9832 /* voMem.h */,
+				69970E4832F7F757D603D658 /* voType.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
 		DB3D942CA7CC8F1E008FEAF8 /* SIP */ = {
 			isa = PBXGroup;
 			children = (
-				A4B0C1D2E3F4A5B6C7D8E9F0 /* InboundListener.swift */,
+				77820649937FE711A757AD2A /* InboundListener.swift */,
 				091382AF4736A88FFCA6EB39 /* SDP.swift */,
 				F985791C1644D7A2C7699027 /* SIPCall.swift */,
 				3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */,
@@ -235,17 +537,16 @@
 			buildConfigurationList = E46131540ECBEF775393F527 /* Build configuration list for PBXNativeTarget "SipClient" */;
 			buildPhases = (
 				4F65B654303D162EB2340E1B /* Sources */,
-				AA03AA03AA03AA03AA03AA03 /* Frameworks */,
 				5880BF1CD18919B7D88BF01D /* Resources */,
+				07D0BCDFCCD0B992CFDBF8D0 /* Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				128BF8772FA4F484006AD146 /* PBXTargetDependency */,
 			);
 			name = SipClient;
 			packageProductDependencies = (
-				128BF8762FA4F484006AD146 /* Sparkle */,
+				E286DC1BD19BA58EED92B355 /* Sparkle */,
 			);
 			productName = SipClient;
 			productReference = 867E2734C4684D7FA23C7484 /* SipClient.app */;
@@ -258,9 +559,10 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					20F0D72C3427DF836E1E4118 = {
+						DevelopmentTeam = "";
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -275,7 +577,7 @@
 			mainGroup = 791AFF7231B4EFE19C5C4129;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				128BF8742FA4F3B0006AD146 /* XCLocalSwiftPackageReference "../../Developer/Sparkle" */,
+				D13764EB2EF50F2BCF356F3E /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C8A19FCD91EC6151B540FD3B /* Products */;
@@ -287,23 +589,14 @@
 		};
 /* End PBXProject section */
 
-/* Begin PBXFrameworksBuildPhase section */
-		AA03AA03AA03AA03AA03AA03 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				AA01AA01AA01AA01AA01AA01 /* Sparkle in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
-
 /* Begin PBXResourcesBuildPhase section */
 		5880BF1CD18919B7D88BF01D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				E8C7A32B4A52557E427BCCE2 /* Assets.xcassets in Resources */,
+				314857A8F0FD7538C3330D79 /* LICENSE-vo-amrwbenc.txt in Resources */,
+				EFBECD12B997C21F3DB9B807 /* NOTICE-vo-amrwbenc.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,59 +607,107 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				44D77592F38532F8FEACEB3D /* AMRWBCodec.swift in Sources */,
 				FED43CAA2CA043B957F9EDD3 /* AppState.swift in Sources */,
-				A11A11A11A11A11A11A11A11 /* CallChartSnapshot.swift in Sources */,
-				C33C33C33C33C33C33C33C33 /* CallChartsWindow.swift in Sources */,
 				1C8C402F2E5B1CFD9E13BD67 /* AudioClip.swift in Sources */,
 				6DB23C1A9A45D5E5428BD5BD /* AudioDevices.swift in Sources */,
 				831EEE33B5ED00DB0274391A /* AudioEngine.swift in Sources */,
 				D27223A275EAEAC02AFB2CEE /* AudioLibraryView.swift in Sources */,
+				BBB2F09D34D4A35714289FC3 /* CallChartHTMLExport.swift in Sources */,
+				675B9B48F1C320F192E56CB1 /* CallChartHTMLPage.swift in Sources */,
+				C28E41260D0BEA9F8470C2C7 /* CallChartSnapshot.swift in Sources */,
+				9AC1623570C7E375A29BA782 /* CallChartsWindow.swift in Sources */,
+				899084DFC23FAB070BBFBA90 /* CallMetrics.swift in Sources */,
+				B260F1F36DB1CE7488440808 /* CallRecorder.swift in Sources */,
+				1C6C8E389F4B99A9147302BE /* Codec.swift in Sources */,
 				41FE5F579584C3E74DA4429C /* ContentView.swift in Sources */,
 				11BDBD756F65721F1ED7DF6D /* DialerProfile.swift in Sources */,
 				E81811BC24DA50B241D45E85 /* DialerView.swift in Sources */,
 				FADADCD4430BCFD592198831 /* FrameBuffer.swift in Sources */,
 				D49A264EF78E3B699591B6EF /* G711.swift in Sources */,
+				22DF4DABCC2489E354E14D7B /* G722.swift in Sources */,
 				BFF4857501F381DE543C14E8 /* InCallView.swift in Sources */,
+				F74BEE9A928E8DC5CA7702A7 /* InboundListener.swift in Sources */,
 				9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */,
+				B4B8723BF2CA40093DB685B4 /* JitterBuffer.swift in Sources */,
 				FD473E25DF81CC340752DED0 /* LevelMeter.swift in Sources */,
 				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
-				A1B2C3D4E5F60718293A4B5C /* MicCapture.swift in Sources */,
-				A2B3C4D5E6F70819293A4B5D /* SpeakerPlayback.swift in Sources */,
-				C0D0E0F010203040506A7B8C /* Codec.swift in Sources */,
-				C1D1E1F11203040506A7B8CD /* G722.swift in Sources */,
-				C2D3E4F50607080910111213 /* SRTP.swift in Sources */,
-				C3D4E5F60708091011121314 /* SRTPCrypto.swift in Sources */,
-				E1F2030405060708090A0B0C /* SIPTransport.swift in Sources */,
-				E2F30405060708090A0B0C0D /* StreamSIPTransport.swift in Sources */,
+				D13C2AB8F79E98D05C76A60F /* MicCapture.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
 				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,
 				54E5E00FA948C33B5EAB9B30 /* SIPCall.swift in Sources */,
 				B50DA0C0C758E1D399004F18 /* SIPCallConfig.swift in Sources */,
+				88728A4D765F9999D5F384FF /* SIPCallExport.swift in Sources */,
+				075C50A2AAF53571B8B002FB /* SIPCustomHeader.swift in Sources */,
 				AC90E5DADD97F66168C66DCE /* SIPMessage.swift in Sources */,
+				AE0E973719292BF9FB282431 /* SIPTransport.swift in Sources */,
+				A91D5C63E03FDC7B517BF4AA /* SRTP.swift in Sources */,
+				08B335A5F18EA2DFF97E93E4 /* SRTPCrypto.swift in Sources */,
 				C9D0D4788EB364CCB1576E7F /* STUN.swift in Sources */,
 				505309C2041E2E6C17347638 /* Scenario.swift in Sources */,
 				96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */,
 				F8F1409B7555F4FB878E82EF /* SipClientApp.swift in Sources */,
-				E55E55E55E55E55E55E55E55 /* UpdateController.swift in Sources */,
+				6B1DCE8CC8FB67EFFCF37FEB /* SpeakerPlayback.swift in Sources */,
+				916D3CB574F157DFA74714CD /* StreamSIPTransport.swift in Sources */,
 				F8AB73FCF6D6316CF0853A73 /* UDPSocket.swift in Sources */,
+				6F1B51D4A60622323658E303 /* UpdateController.swift in Sources */,
 				FEE7A9A4EEE9FCCFC0A2B562 /* WAVFile.swift in Sources */,
+				3119C8974E0F49EE08897CEC /* WaveformEnvelope.swift in Sources */,
 				B20761BDF861701AC6AF6F17 /* WireLogEntry.swift in Sources */,
-				B30872CEF972812BD7BFAA28 /* SIPCustomHeader.swift in Sources */,
-				B40983DFA083923CE8C0BB39 /* CallMetrics.swift in Sources */,
-				B5109A4EBB94934DBF1D5BC9 /* SIPCallExport.swift in Sources */,
-				B6210AB5FCA0A45ED02E6CDB /* InboundListener.swift in Sources */,
 				3A1EBF3688F44219119CFE8D /* WireLogView.swift in Sources */,
+				4FEF92DD30589B21811FDD68 /* autocorr.c in Sources */,
+				EAF81F3AD1B740A20774D1B6 /* az_isp.c in Sources */,
+				59EA7B0FC4C36F9F518659BF /* bits.c in Sources */,
+				DE3F575FF446E965096E4803 /* c2t64fx.c in Sources */,
+				109B9E470D5A0BC672E8F4D2 /* c4t64fx.c in Sources */,
+				CF4F51A0618F85A9D317D252 /* cmnMemory.c in Sources */,
+				259E21C7D3766FF030E33C7F /* convolve.c in Sources */,
+				0F44D246A854DE2C81A693F3 /* cor_h_x.c in Sources */,
+				E822A1882A904D47CC87833B /* decim54.c in Sources */,
+				17F1E7DF669B42928C4DC10F /* deemph.c in Sources */,
+				71D7E8C3044419F66ADEADD0 /* dtx.c in Sources */,
+				DE8722070F052C8F6DECD9CC /* g_pitch.c in Sources */,
+				262445C8898E1362BA48429D /* gpclip.c in Sources */,
+				2AB507DB765FD3BCFF699A9D /* homing.c in Sources */,
+				A44E75A726BE1D7DD247B7A1 /* hp400.c in Sources */,
+				ED9A1C9FF30D2B6C426B1A6E /* hp50.c in Sources */,
+				EFDC88B6B481388670D9D5E0 /* hp6k.c in Sources */,
+				DC8D4FCFF1FC8897FD91284A /* hp_wsp.c in Sources */,
+				A0BFBF66631FF28EC6038E8E /* int_lpc.c in Sources */,
+				F6392718A19C37EB4BEABFEE /* isp_az.c in Sources */,
+				BFBB4D61959D0C117D0D8A5E /* isp_isf.c in Sources */,
+				BB2DADCF2EF67AC99F0DEDDE /* lag_wind.c in Sources */,
+				39548822F3E85E8789C39BDE /* levinson.c in Sources */,
+				83D999FE009B5D0CDFDCBFD1 /* log2.c in Sources */,
+				A8AB95AF00452EFE42086B16 /* lp_dec2.c in Sources */,
+				4C52CD4960CE8423466C2161 /* math_op.c in Sources */,
+				D106B48EBFE261147E6C9748 /* mem_align.c in Sources */,
+				8CAF865B0D52EFEDDD0EBE4D /* oper_32b.c in Sources */,
+				A61E9B9DAA877A87B08A33FA /* p_med_ol.c in Sources */,
+				0B356550209581175BD52C53 /* pit_shrp.c in Sources */,
+				BFE4669144329CA9504EC12C /* pitch_f4.c in Sources */,
+				0770A8FB29190F852A2C4411 /* pred_lt4.c in Sources */,
+				58B1D4773F6FED9D3E191104 /* preemph.c in Sources */,
+				C59537B329F828720C082767 /* q_gain2.c in Sources */,
+				CA3BF56B58AE748239803D03 /* q_pulse.c in Sources */,
+				60BED97532B68F33E65F9E2A /* qisf_ns.c in Sources */,
+				26D549C59E0990A38A92E093 /* qpisf_2s.c in Sources */,
+				DDC14EB7728252D3213A65ED /* random.c in Sources */,
+				01FB4CE5538226F7218CD750 /* residu.c in Sources */,
+				6A5CC25F31516A3FED7A1309 /* scale.c in Sources */,
+				292B983BAE9397CA71288582 /* stream.c in Sources */,
+				E5C77FF696F2B33EFF5EDB87 /* syn_filt.c in Sources */,
+				08405E2741770DC96154783E /* updt_tar.c in Sources */,
+				644D97113FDA3E09067B5454 /* util.c in Sources */,
+				8F4B18D1FD9B2E71DA870561 /* voAMRWBEnc.c in Sources */,
+				C5CCE06740558306163C6232 /* voicefac.c in Sources */,
+				288B760563016C7DDE4019BE /* wb_vad.c in Sources */,
+				B8F95DA2DB836C14018A0A12 /* weight_a.c in Sources */,
+				F1142E76E22374571AD2113D /* wrapper.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		128BF8772FA4F484006AD146 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 128BF8762FA4F484006AD146 /* Sparkle */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		1242BE2E4F467B08E91D1B23 /* Debug */ = {
@@ -405,13 +746,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = WDCGJTU726;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -432,7 +771,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -476,13 +814,11 @@
 				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = WDCGJTU726;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -496,7 +832,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_STRICT_CONCURRENCY = minimal;
@@ -509,20 +844,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/SipClient.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Sources/RTP/AMRWB/vendor",
+					"$(SRCROOT)/Sources/RTP/AMRWB/vendor/amrwbenc/inc",
+					"$(SRCROOT)/Sources/RTP/AMRWB/vendor/common/include",
+				);
 				INFOPLIST_FILE = Sources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = SipCall;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yepher.sipclient;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/SipClient-Bridging-Header.h";
 			};
 			name = Release;
 		};
@@ -531,20 +867,21 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/SipClient.entitlements;
-				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				COMBINE_HIDPI_IMAGES = YES;
-				DEAD_CODE_STRIPPING = YES;
-				DEVELOPMENT_TEAM = WDCGJTU726;
 				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
+					"$(SRCROOT)/Sources/RTP/AMRWB/vendor",
+					"$(SRCROOT)/Sources/RTP/AMRWB/vendor/amrwbenc/inc",
+					"$(SRCROOT)/Sources/RTP/AMRWB/vendor/common/include",
+				);
 				INFOPLIST_FILE = Sources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = SipCall;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.yepher.sipclient;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Sources/SipClient-Bridging-Header.h";
 			};
 			name = Debug;
 		};
@@ -571,17 +908,21 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		128BF8742FA4F3B0006AD146 /* XCLocalSwiftPackageReference "../../Developer/Sparkle" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../Developer/Sparkle;
+/* Begin XCRemoteSwiftPackageReference section */
+		D13764EB2EF50F2BCF356F3E /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
 		};
-/* End XCLocalSwiftPackageReference section */
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		128BF8762FA4F484006AD146 /* Sparkle */ = {
+		E286DC1BD19BA58EED92B355 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 128BF8742FA4F3B0006AD146 /* XCLocalSwiftPackageReference "../../Developer/Sparkle" */;
+			package = D13764EB2EF50F2BCF356F3E /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */

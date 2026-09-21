@@ -1,6 +1,6 @@
 name: SipClient
 options:
-  bundleIdPrefix: io.livekit.sipclient
+  bundleIdPrefix: com.yepher
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -14,12 +14,37 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
     SWIFT_STRICT_CONCURRENCY: minimal
+
+# Sparkle powers in-app auto-update. This MUST stay declared here rather
+# than being added through Xcode's UI: project.yml regenerates the
+# project, so anything added only in Xcode is silently dropped on the
+# next `xcodegen generate` — which is how the dependency, and every
+# SU* key below, went missing before 0.1.0-b11.
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: 2.9.1
+
 targets:
   SipClient:
     type: application
     platform: macOS
+    dependencies:
+      - package: Sparkle
     sources:
       - path: Sources
+        excludes:
+          # Lookup tables #include'd by the vendored AMR-WB encoder. They
+          # are found via HEADER_SEARCH_PATHS; keeping them out of the
+          # project stops Xcode copying them into the app bundle.
+          - "RTP/AMRWB/vendor/**/*.tab"
+          - "RTP/AMRWB/vendor/VENDORED.md"
+      # Apache-2.0 §4(a) requires the licence and NOTICE to travel with
+      # any binary distribution of vo-amrwbenc, so they ship in the bundle.
+      - path: Sources/RTP/AMRWB/vendor/LICENSE-vo-amrwbenc.txt
+        buildPhase: resources
+      - path: Sources/RTP/AMRWB/vendor/NOTICE-vo-amrwbenc.txt
+        buildPhase: resources
     resources:
       - path: Resources
         optional: true
@@ -28,9 +53,12 @@ targets:
       properties:
         CFBundleName: SipClient
         CFBundleDisplayName: SIP Client
-        CFBundleIdentifier: io.livekit.sipclient
-        CFBundleShortVersionString: "0.1.0"
-        CFBundleVersion: "1"
+        # Must resolve through the build setting, not be hardcoded — the
+        # .sipcall UTI below is namespaced under this identifier and
+        # existing installs update in place only if it stays stable.
+        CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
+        CFBundleShortVersionString: "0.1.0-b10"
+        CFBundleVersion: "30"
         CFBundleIconName: AppIcon
         LSMinimumSystemVersion: "14.0"
         NSHighResolutionCapable: true
@@ -38,6 +66,31 @@ targets:
         NSLocalNetworkUsageDescription: "SIP Client communicates with SIP servers and STUN servers on your local network."
         NSBonjourServices:
           - _sip._udp
+        # Sparkle auto-update. SUPublicEDKey pairs with the private key at
+        # ~/.config/sipclient-sparkle.key and MUST NOT be rotated — builds
+        # already in users' hands refuse updates signed with another key.
+        SUFeedURL: "https://raw.githubusercontent.com/yepher/SipClient/main/appcast.xml"
+        SUPublicEDKey: "xMeOWJTJ1RR9l+fHmScEm89mvi302Io6oBl7q8QDLls="
+        SUEnableAutomaticChecks: true
+        SUScheduledCheckInterval: 86400
+        # Double-clicking a .sipcall profile in Finder opens it here.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: SIP Client Profile
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.yepher.sipclient.sipcall
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.yepher.sipclient.sipcall
+            UTTypeDescription: SIP Client Profile
+            UTTypeConformsTo:
+              - public.json
+              - public.data
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - sipcall
+              public.mime-type:
+                - application/x-sipcall
     entitlements:
       path: Sources/SipClient.entitlements
       properties:
@@ -48,7 +101,13 @@ targets:
         com.apple.security.files.user-selected.read-write: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.livekit.sipclient
+        PRODUCT_BUNDLE_IDENTIFIER: com.yepher.sipclient
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Sources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Sources/SipClient.entitlements
+        # Vendored AMR-WB encoder (vo-amrwbenc) compiled into the target.
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/SipClient-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Sources/RTP/AMRWB/vendor
+          - $(SRCROOT)/Sources/RTP/AMRWB/vendor/amrwbenc/inc
+          - $(SRCROOT)/Sources/RTP/AMRWB/vendor/common/include

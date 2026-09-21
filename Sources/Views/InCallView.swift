@@ -264,6 +264,30 @@ struct InCallView: View {
             }
             .buttonStyle(.borderless)
             .help(appState.micMuted ? "Unmute microphone" : "Mute microphone")
+
+            Button {
+                appState.toggleCallRecording()
+            } label: {
+                Image(systemName: appState.callRecordingArmed
+                      ? "record.circle.fill" : "record.circle")
+                    .foregroundStyle(appState.callRecordingArmed ? .red : .secondary)
+            }
+            .buttonStyle(.borderless)
+            .help(appState.callRecordingArmed
+                  ? "Stop recording this call"
+                  : "Record this call to a stereo WAV (left = us, right = peer)")
+
+            // Only offered once a recording has been finalised, so it
+            // can't reveal a half-written file.
+            if let url = appState.callRecordingURL, !appState.callRecordingArmed {
+                Button {
+                    appState.revealCallRecording()
+                } label: {
+                    Image(systemName: "folder")
+                }
+                .buttonStyle(.borderless)
+                .help("Reveal \(url.lastPathComponent) in Finder")
+            }
             Picker("", selection: Binding<AudioDeviceID>(
                 get: { appState.selectedInputDeviceID },
                 set: { appState.setInputDevice($0) }

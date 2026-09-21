@@ -29,19 +29,52 @@ In call log can click on the Call Chart and review the metrics for the entire ca
   with Proxy-Authorization handling), with retransmit timers.
 - **STUN** — public IP/port discovery so the SDP advertises a reachable
   RTP endpoint when behind NAT.
-- **Codecs** — G.711 μ-law (PCMU), G.711 A-law (PCMA), and G.722
-  (wideband). Per-profile codec selection drives the SDP offer; the peer's
-  answer picks one and the client encodes/decodes in lockstep.
+- **Codecs** — G.711 μ-law (PCMU), G.711 A-law (PCMA), G.722 (wideband)
+  and AMR-WB / G.722.2 (wideband). Per-profile codec selection drives the
+  SDP offer; the peer's answer picks one and the client encodes/decodes in
+  lockstep.
+- **AMR-WB** — offered on a dynamic payload type (96) with a real 16 kHz
+  RTP clock, all nine bitrate modes (6.60–23.85 kbit/s), and both RFC 4867
+  payload framings. The offer states `octet-align` explicitly in either
+  direction; whatever the peer answers with is what the call uses, so
+  bandwidth-efficient carriers interoperate. Decoding uses the AMR-WB
+  codec built into macOS (AudioToolbox); encoding uses a vendored copy of
+  vo-amrwbenc, since macOS ships no AMR-WB encoder — see
+  `Sources/RTP/AMRWB/vendor/VENDORED.md`.
 - **DTMF** — RFC 4733 telephone-event packets at the negotiated dynamic
   payload type.
 - **Mic capture** — AudioQueueServices at the codec's native rate
-  (8 kHz for G.711, 16 kHz for G.722). Live device routing via
+  (8 kHz for G.711, 16 kHz for G.722 and AMR-WB). Live device routing via
   `kAudioQueueProperty_CurrentDevice`. Auto-refreshing device list when
   AirPods/USB devices come and go. Mute toggle on the in-call mic icon.
 - **Playback** — AVAudioEngine player reconfigured per-call to match the
   negotiated codec rate.
 - **Audio library** — record clips from the mic, import WAVs, and play
   them into an active call.
+- **Call recording** — capture a live call to a two-channel WAV: left is
+  this client, right is the peer. The near channel is tapped at the RTP
+  send loop, so it captures injected clips and comfort silence, not just
+  what the microphone heard; the far channel is tapped at playback, so it
+  is what you actually heard after jitter buffering. Both channels are
+  pinned to wall-clock rather than to each other, so they cannot drift
+  apart over a long call. Recording can be armed before the call connects
+  and is written at the negotiated codec's rate into
+  `~/Library/Application Support/SipClient/Recordings`. The wire log entry
+  for a finished recording carries a **Show in Finder** button.
+- **Waveform on the call charts** — when a call was recorded, the post-call
+  chart window adds an audio lane above the inter-arrival and jitter
+  charts, sharing their time axis and zoom, so you can line an audio
+  artefact up against the jitter spike that caused it. Near end is drawn
+  in the top half, far end in the bottom. The recording plays back with a
+  playhead tracked across all three lanes; click any chart to move it.
+- **Shareable HTML export** — ⌘E in the chart window writes a single
+  self-contained `.html` holding the charts, the waveform and the
+  recording itself (inlined as a data URI). No CDN, no sibling files and
+  no network access, so it still works as an email attachment on a machine
+  that has never seen this project. The exported page keeps hover
+  readouts, drag-to-zoom, click-to-seek and playhead sync, and follows
+  light/dark. Recordings over 100 MB are left out rather than producing an
+  unshareable file, and the page says so.
 - **Scenarios** — scripted sequences of `waitForAnswer` / `wait` /
   `playClip` / `sendDTMF` / `hangup` that you can save and replay.
 - **Wire log** — every SIP message, RTP-stat sample, audio diagnostic, and
