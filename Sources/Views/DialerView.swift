@@ -269,9 +269,9 @@ struct DialerView: View {
 
     @ViewBuilder
     private var codecSection: some View {
-        Section("Codecs (offered in SDP, peer picks one)") {
-            ForEach(CodecKind.allCases) { kind in
-                Toggle(kind.displayName, isOn: codecToggleBinding(for: kind))
+        Section("Codecs (offered in SDP in this order, peer picks one)") {
+            ForEach(codecRows) { kind in
+                codecRow(kind)
             }
             if draft.codecs.isEmpty {
                 Text("Defaults to PCMU + PCMA when none are selected.")
@@ -281,7 +281,47 @@ struct DialerView: View {
             if draft.codecs.contains(.amrwb) {
                 amrwbOptions
             }
+            if draft.codecs.contains(.opus) {
+                opusOptions
+            }
         }
+    }
+
+    /// Enabled codecs first, in offer order, then the rest in their
+    /// canonical order so they're easy to find and switch on.
+    private var codecRows: [CodecKind] {
+        draft.codecs + CodecKind.allCases.filter { !draft.codecs.contains($0) }
+    }
+
+    private func codecRow(_ kind: CodecKind) -> some View {
+        let index = draft.codecs.firstIndex(of: kind)
+        return HStack {
+            Toggle(kind.displayName, isOn: codecToggleBinding(for: kind))
+            Spacer()
+            if let index {
+                Text("#\(index + 1)")
+                    .font(.caption.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                Button { moveCodec(at: index, by: -1) } label: {
+                    Image(systemName: "chevron.up")
+                }
+                .disabled(index == 0)
+                .help("Offer \(kind.rtpmapName) earlier")
+                Button { moveCodec(at: index, by: 1) } label: {
+                    Image(systemName: "chevron.down")
+                }
+                .disabled(index == draft.codecs.count - 1)
+                .help("Offer \(kind.rtpmapName) later")
+            }
+        }
+        .buttonStyle(.borderless)
+    }
+
+    private func moveCodec(at index: Int, by offset: Int) {
+        let target = index + offset
+        guard draft.codecs.indices.contains(target) else { return }
+        draft.codecs.swapAt(index, target)
+        hasUnsavedChanges = true
     }
 
     /// AMR-WB only has knobs worth exposing when it's actually offered,
@@ -312,15 +352,33 @@ struct DialerView: View {
             .foregroundStyle(.secondary)
     }
 
-    /// Toggle binding that adds/removes a codec from `draft.codecs`,
-    /// preserving CodecKind.allCases as the canonical preference order.
+    @ViewBuilder
+    private var opusOptions: some View {
+        Divider()
+        Picker("Opus bitrate", selection: Binding(
+            get: { draft.opusBitrate },
+            set: { draft.opusBitrate = $0; hasUnsavedChanges = true })) {
+            ForEach(OpusBitrate.allCases) { rate in
+                Text(rate.displayName).tag(rate)
+            }
+        }
+        Text("The rate we encode at (mono, 20 ms). We decode whatever the "
+             + "peer sends.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+    }
+
+    /// Toggle binding that adds/removes a codec from `draft.codecs`.
+    /// Enabling appends to the end of the offer; the arrows reorder.
     private func codecToggleBinding(for kind: CodecKind) -> Binding<Bool> {
         Binding<Bool>(
             get: { draft.codecs.contains(kind) },
             set: { isOn in
-                var set = Set(draft.codecs)
-                if isOn { set.insert(kind) } else { set.remove(kind) }
-                draft.codecs = CodecKind.allCases.filter { set.contains($0) }
+                if isOn {
+                    if !draft.codecs.contains(kind) { draft.codecs.append(kind) }
+                } else {
+                    draft.codecs.removeAll { $0 == kind }
+                }
                 hasUnsavedChanges = true
             }
         )
@@ -402,6 +460,7 @@ struct DialerView: View {
                         codecs: p.codecs,
                         amrwbMode: p.amrwbMode,
                         amrwbOctetAligned: p.amrwbOctetAligned,
+                        opusBitrate: p.opusBitrate,
                         transportKind: p.transportKind,
                         allowSelfSignedTLS: p.allowSelfSignedTLS,
                         useSRTP: p.useSRTP,

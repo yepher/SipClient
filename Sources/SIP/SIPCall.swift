@@ -250,12 +250,13 @@ final class SIPCall: @unchecked Sendable {
                 remoteRTPPort = ans.remotePort
                 negotiatedPT = ans.audioPT
                 negotiatedCodec = ans.codec
-                // We keep the bitrate mode we were configured to send at
-                // — that's our choice, not the peer's — but we must adopt
-                // whatever payload framing they answered with.
+                // We keep the bitrate we were configured to send at —
+                // that's our choice, not the peer's — but we must adopt
+                // whatever AMR-WB payload framing they answered with.
                 negotiatedCodecParams = CodecParams(
                     amrwbMode: cfg.codecParams.amrwbMode,
-                    amrwbOctetAligned: ans.codecParams.amrwbOctetAligned)
+                    amrwbOctetAligned: ans.codecParams.amrwbOctetAligned,
+                    opusBitrate: cfg.codecParams.opusBitrate)
                 negotiatedPtime = ans.ptime
                 negotiatedDTMFPT = ans.dtmfPT
                 inboundCrypto = ans.crypto
@@ -287,6 +288,8 @@ final class SIPCall: @unchecked Sendable {
                     codecDetail += " \(negotiatedCodecParams.amrwbMode.displayName) "
                         + (negotiatedCodecParams.amrwbOctetAligned
                            ? "octet-aligned" : "bandwidth-efficient")
+                } else if negotiatedCodec == .opus {
+                    codecDetail += " \(negotiatedCodecParams.opusBitrate.displayName)"
                 }
                 emitStatus("Connected — RTP \(remoteRTPHost):\(remoteRTPPort) PT=\(negotiatedPT) codec=\(codecDetail)")
 

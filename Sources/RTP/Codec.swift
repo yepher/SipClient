@@ -13,11 +13,14 @@ import Foundation
 ///   * AMR-WB carries 16 kHz audio on a genuine 16 kHz RTP clock
 ///     (RFC 4867), so it advances 320, needs a dynamically negotiated
 ///     payload type, and has a frame size that varies with bitrate mode.
+///   * Opus is 48 kHz on a 48 kHz RTP clock (RFC 7587), so it advances
+///     960 per packet, and like AMR-WB takes a dynamic payload type.
 enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
     case pcmu   // G.711 μ-law
     case pcma   // G.711 A-law
     case g722   // G.722 sub-band ADPCM (wideband)
     case amrwb  // AMR-WB / G.722.2 (wideband)
+    case opus   // Opus (fullband)
 
     var id: String { rawValue }
 
@@ -27,6 +30,7 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         case .pcma:  return "PCMA (G.711 A-law)"
         case .g722:  return "G.722 (wideband)"
         case .amrwb: return "AMR-WB (G.722.2, wideband)"
+        case .opus:  return "Opus (fullband)"
         }
     }
 
@@ -38,7 +42,7 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         case .pcmu:  return 0
         case .pcma:  return 8
         case .g722:  return 9
-        case .amrwb: return nil
+        case .amrwb, .opus: return nil
         }
     }
 
@@ -48,15 +52,18 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         case .pcma:  return "PCMA"
         case .g722:  return "G722"
         case .amrwb: return "AMR-WB"
+        case .opus:  return "opus"
         }
     }
 
     /// RTP timestamp clock rate, as written in `a=rtpmap`. 8000 for the
-    /// G.711 pair and — deliberately — for G.722; 16000 for AMR-WB.
+    /// G.711 pair and — deliberately — for G.722; 16000 for AMR-WB;
+    /// 48000 for Opus.
     var rtpClockRate: UInt32 {
         switch self {
         case .pcmu, .pcma, .g722: return 8000
         case .amrwb:              return 16000
+        case .opus:               return 48000
         }
     }
 
@@ -65,6 +72,7 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         switch self {
         case .pcmu, .pcma:   return 8000
         case .g722, .amrwb:  return 16000
+        case .opus:          return Opus.sampleRate
         }
     }
 
@@ -73,6 +81,7 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         switch self {
         case .pcmu, .pcma:   return 160
         case .g722, .amrwb:  return 320
+        case .opus:          return Opus.samplesPerFrame
         }
     }
 
@@ -81,11 +90,17 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         switch self {
         case .pcmu, .pcma, .g722: return 160
         case .amrwb:              return 320
+        case .opus:               return 960
         }
     }
 
     /// SDP `a=rtpmap` line content (everything after `a=rtpmap:<pt> `).
-    var rtpmapLine: String { "\(rtpmapName)/\(rtpClockRate)" }
+    /// RFC 7587 §7 requires Opus to declare 2 channels here even when
+    /// only mono is ever sent.
+    var rtpmapLine: String {
+        self == .opus ? "\(rtpmapName)/\(rtpClockRate)/2"
+                      : "\(rtpmapName)/\(rtpClockRate)"
+    }
 
     /// SDP `a=fmtp` parameters for this codec, or nil when it needs none.
     /// We state `octet-align` explicitly in both directions: RFC 4867
@@ -98,6 +113,10 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
             return nil
         case .amrwb:
             return "octet-align=\(params.amrwbOctetAligned ? 1 : 0)"
+        case .opus:
+            // Mirrors what browsers offer, so the peer sees a WebRTC-
+            // shaped Opus offer. We send mono and ask for mono back.
+            return "minptime=10;useinbandfec=1;stereo=0;sprop-stereo=0"
         }
     }
 
@@ -108,6 +127,7 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         case .g722:  return G722Encoder()
         case .amrwb: return AMRWBEncoder(mode: params.amrwbMode,
                                          octetAligned: params.amrwbOctetAligned)
+        case .opus:  return OpusEncoder(bitrate: params.opusBitrate)
         }
     }
 
@@ -117,6 +137,7 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
         case .pcma:  return PCMADecoder()
         case .g722:  return G722Decoder()
         case .amrwb: return AMRWBDecoder(octetAligned: params.amrwbOctetAligned)
+        case .opus:  return OpusDecoder()
         }
     }
 
@@ -133,20 +154,22 @@ enum CodecKind: String, Codable, CaseIterable, Identifiable, Hashable {
     }
 
     /// Match a codec by the encoding name in an `a=rtpmap` line. Case
-    /// insensitive, since peers are inconsistent about "AMR-WB".
+    /// insensitive, since peers are inconsistent about "AMR-WB" and
+    /// RFC 7587 spells Opus in lower case.
     static func fromRTPMapName(_ name: String) -> CodecKind? {
         switch name.uppercased() {
         case "PCMU":   return .pcmu
         case "PCMA":   return .pcma
         case "G722":   return .g722
         case "AMR-WB": return .amrwb
+        case "OPUS":   return .opus
         default:       return nil
         }
     }
 }
 
-/// Codec-specific negotiated parameters. Only AMR-WB uses these today;
-/// the G.711 pair and G.722 have nothing to configure.
+/// Codec-specific negotiated parameters for AMR-WB and Opus; the G.711
+/// pair and G.722 have nothing to configure.
 struct CodecParams: Equatable, Hashable {
     /// Bitrate mode we *encode* at. The peer may send us any mode; the
     /// decoder reads the mode per frame from the payload.
@@ -154,6 +177,8 @@ struct CodecParams: Equatable, Hashable {
     /// RFC 4867 payload framing. True = octet-aligned (`octet-align=1`),
     /// false = bandwidth-efficient, which is what most carriers use.
     var amrwbOctetAligned: Bool = true
+    /// Target bitrate we encode Opus at. The decoder handles any rate.
+    var opusBitrate: OpusBitrate = .k32
 }
 
 protocol CodecEncoder: AnyObject {

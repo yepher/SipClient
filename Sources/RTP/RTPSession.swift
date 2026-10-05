@@ -237,8 +237,10 @@ final class RTPSession: @unchecked Sendable {
                 try? await Task.sleep(nanoseconds: 20_000_000)
             }
 
-            // Advance the audio timestamp past the event so it stays consistent.
-            setTimestamp(baseTS &+ frameSamples * UInt32(packetsPerEvent))
+            // Advance the audio timestamp past the event so it stays
+            // consistent. That's in the audio codec's clock, which is only
+            // 8 kHz for G.711/G.722 — AMR-WB and Opus run faster.
+            setTimestamp(baseTS &+ codec.timestampAdvance * UInt32(packetsPerEvent))
 
             try? await Task.sleep(nanoseconds: 50_000_000)
         }

@@ -30,6 +30,9 @@ struct DialerProfile: Identifiable, Codable, Hashable {
     /// networks use. Either way we adopt whatever the peer answers.
     var amrwbOctetAligned: Bool = true
 
+    /// Opus target bitrate we encode at when Opus is negotiated.
+    var opusBitrate: OpusBitrate = .k32
+
     /// SIP signalling transport. UDP / TCP / TLS.
     var transportKind: SIPTransportKind = .udp
     /// Accept any TLS server certificate. Convenient for dev.
@@ -73,6 +76,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         codecs: [CodecKind] = [.pcmu, .pcma],
         amrwbMode: AMRWBMode = .k1265,
         amrwbOctetAligned: Bool = true,
+        opusBitrate: OpusBitrate = .k32,
         transportKind: SIPTransportKind = .udp,
         allowSelfSignedTLS: Bool = true,
         useSRTP: Bool = false,
@@ -97,6 +101,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.codecs = codecs
         self.amrwbMode = amrwbMode
         self.amrwbOctetAligned = amrwbOctetAligned
+        self.opusBitrate = opusBitrate
         self.transportKind = transportKind
         self.allowSelfSignedTLS = allowSelfSignedTLS
         self.useSRTP = useSRTP
@@ -121,6 +126,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
             codecs: codecs,
             amrwbMode: amrwbMode,
             amrwbOctetAligned: amrwbOctetAligned,
+            opusBitrate: opusBitrate,
             transportKind: transportKind,
             allowSelfSignedTLS: allowSelfSignedTLS,
             useSRTP: useSRTP,
@@ -152,6 +158,7 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         self.amrwbMode = (try? c.decode(AMRWBMode.self, forKey: .amrwbMode)) ?? .k1265
         self.amrwbOctetAligned = (try? c.decode(Bool.self,
                                                 forKey: .amrwbOctetAligned)) ?? true
+        self.opusBitrate = (try? c.decode(OpusBitrate.self, forKey: .opusBitrate)) ?? .k32
         self.transportKind = (try? c.decode(SIPTransportKind.self, forKey: .transportKind)) ?? .udp
         self.allowSelfSignedTLS = (try? c.decode(Bool.self, forKey: .allowSelfSignedTLS)) ?? true
         self.useSRTP = (try? c.decode(Bool.self, forKey: .useSRTP)) ?? false
@@ -179,7 +186,8 @@ struct DialerProfile: Identifiable, Codable, Hashable {
         cfg.localRTPPort = localRTPPort
         cfg.codecs = codecs.isEmpty ? [.pcmu, .pcma] : codecs
         cfg.codecParams = CodecParams(amrwbMode: amrwbMode,
-                                      amrwbOctetAligned: amrwbOctetAligned)
+                                      amrwbOctetAligned: amrwbOctetAligned,
+                                      opusBitrate: opusBitrate)
         cfg.transportKind = transportKind
         cfg.allowSelfSignedTLS = allowSelfSignedTLS
         cfg.useSRTP = useSRTP

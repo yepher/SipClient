@@ -60,6 +60,7 @@
 		96C123859B261AFF881AA3F7 /* ScenariosView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 81620830FA0D6AF1C4159EE8 /* ScenariosView.swift */; };
 		9AC1623570C7E375A29BA782 /* CallChartsWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44CC3C51693085315029DDE5 /* CallChartsWindow.swift */; };
 		9E6CA193B59CDFC58A904B47 /* InboundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA55B20DDD93EA0D027570E3 /* InboundView.swift */; };
+		A03E65A6B95E6442A6B2972C /* Opus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DAC7CCB779BADC58BFF32CB /* Opus.swift */; };
 		A0BFBF66631FF28EC6038E8E /* int_lpc.c in Sources */ = {isa = PBXBuildFile; fileRef = 1273962C69CAE6578E5F0384 /* int_lpc.c */; };
 		A44E75A726BE1D7DD247B7A1 /* hp400.c in Sources */ = {isa = PBXBuildFile; fileRef = 2C457471B758CC853028A663 /* hp400.c */; };
 		A61E9B9DAA877A87B08A33FA /* p_med_ol.c in Sources */ = {isa = PBXBuildFile; fileRef = CA1F719BB1F6BD167E0C9A79 /* p_med_ol.c */; };
@@ -142,6 +143,7 @@
 		2A256F531C4C6236284DCA0F /* p_med_o.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = p_med_o.h; sourceTree = "<group>"; };
 		2C457471B758CC853028A663 /* hp400.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hp400.c; sourceTree = "<group>"; };
 		2C7774EB5981B53DC51FC013 /* mem_align.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = mem_align.c; sourceTree = "<group>"; };
+		2DAC7CCB779BADC58BFF32CB /* Opus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Opus.swift; sourceTree = "<group>"; };
 		303582B6DF55153507E74DD6 /* voAMRWB.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = voAMRWB.h; sourceTree = "<group>"; };
 		309E10E277E500AF96790CD4 /* WAVFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WAVFile.swift; sourceTree = "<group>"; };
 		3128E25E2BD4AE5439FAED7E /* SIPCallConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SIPCallConfig.swift; sourceTree = "<group>"; };
@@ -281,6 +283,7 @@
 				4920A5B0B76F41B91A524FBD /* G711.swift */,
 				A64D041C0EEEA978FEF967F6 /* G722.swift */,
 				8990ABD56665EF7F6BA02071 /* JitterBuffer.swift */,
+				2DAC7CCB779BADC58BFF32CB /* Opus.swift */,
 				AC8AB5A1711E23E12529A8E4 /* RTPSession.swift */,
 				3843278F85432512667A61EE /* SRTP.swift */,
 				D2372149FFC7D5B794453C78 /* SRTPCrypto.swift */,
@@ -640,6 +643,7 @@
 				3A4A9E2F2FC8898C8122E69C /* LockedSampleBuffer.swift in Sources */,
 				75FD9DF177AAAC1FDBB9D70B /* MFCC.swift in Sources */,
 				D13C2AB8F79E98D05C76A60F /* MicCapture.swift in Sources */,
+				A03E65A6B95E6442A6B2972C /* Opus.swift in Sources */,
 				3C3C6A9EB00ACEB2F03CF16A /* RTPSession.swift in Sources */,
 				1719EBEDD89A886840A973B7 /* RecordingAnalysis.swift in Sources */,
 				B4577BB3206AB7F1F94F51B8 /* SDP.swift in Sources */,
