@@ -36,7 +36,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>0.2.0-b1</string>
 	<key>CFBundleVersion</key>
-	<string>36</string>
+	<string>39</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>14.0</string>
 	<key>NSBonjourServices</key>

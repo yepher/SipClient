@@ -80,8 +80,8 @@ targets:
         # .sipcall UTI below is namespaced under this identifier and
         # existing installs update in place only if it stays stable.
         CFBundleIdentifier: $(PRODUCT_BUNDLE_IDENTIFIER)
-        CFBundleShortVersionString: "0.1.0-b11"
-        CFBundleVersion: "36"
+        CFBundleShortVersionString: "0.2.0-b1"
+        CFBundleVersion: "39"
         CFBundleIconName: AppIcon
         LSMinimumSystemVersion: "14.0"
         NSHighResolutionCapable: true

@@ -7,6 +7,15 @@
         <language>en</language>
         <!-- bin/update_appcast.py inserts <item> entries above this line. -->
         <item>
+            <title>Version 0.2.0-b1</title>
+            <pubDate>Mon, 05 Oct 2026 21:21:02 +0000</pubDate>
+            <sparkle:shortVersionString>0.2.0-b1</sparkle:shortVersionString>
+            <sparkle:version>39</sparkle:version>
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+            <description><![CDATA[release_notes/0.2.0-b1.html]]></description>
+            <enclosure url="https://github.com/yepher/SipClient/releases/download/release_0_2_0_b1/SipClient-0.2.0-b1.zip" length="5479168" type="application/octet-stream" sparkle:edSignature="Pvcfp36GsiQj+9taArXtFMf3fPlzpKAg6y8HDb+rYKY2P6Uv6nCNsocdbq6fNa0rUcBN0WAOmh6bCt0+mD1uCw=="/>
+        </item>
+        <item>
             <title>Version 0.1.0-b11</title>
             <pubDate>Mon, 21 Sep 2026 16:33:32 +0000</pubDate>
             <sparkle:shortVersionString>0.1.0-b11</sparkle:shortVersionString>
