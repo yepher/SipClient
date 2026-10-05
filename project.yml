@@ -4,6 +4,10 @@ options:
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
+  # Stamps LastUpgradeCheck so Xcode stops offering "Update to recommended
+  # settings". Bump it — and fold any newly recommended settings into
+  # `settings.base` below — when moving to a new Xcode.
+  xcodeVersion: "26.6"
   generateEmptyDirectories: true
 settings:
   base:
@@ -14,6 +18,14 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
     SWIFT_STRICT_CONCURRENCY: minimal
+    # Xcode's recommended settings (the "Update to recommended settings"
+    # check). Set here because anything changed in Xcode's UI is lost on
+    # the next `xcodegen generate`.
+    DEAD_CODE_STRIPPING: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    STRING_CATALOG_GENERATE_SYMBOLS: YES
 
 # Sparkle powers in-app auto-update. This MUST stay declared here rather
 # than being added through Xcode's UI: project.yml regenerates the
@@ -34,11 +46,22 @@ targets:
     sources:
       - path: Sources
         excludes:
-          # Lookup tables #include'd by the vendored AMR-WB encoder. They
-          # are found via HEADER_SEARCH_PATHS; keeping them out of the
-          # project stops Xcode copying them into the app bundle.
-          - "RTP/AMRWB/vendor/**/*.tab"
-          - "RTP/AMRWB/vendor/VENDORED.md"
+          # Added by its own entry below so it can carry compiler flags.
+          - "RTP/AMRWB/vendor"
+      # Vendored AMR-WB encoder. Built with warnings off: it is upstream
+      # code we deliberately don't edit (see VENDORED.md), so its
+      # 64-bit-narrowing and doc-comment warnings are noise we can't fix.
+      - path: Sources/RTP/AMRWB/vendor
+        compilerFlags: "-w"
+        excludes:
+          # Lookup tables #include'd by the C sources. They are found via
+          # HEADER_SEARCH_PATHS; keeping them out of the project stops
+          # Xcode copying them into the app bundle.
+          - "**/*.tab"
+          - "VENDORED.md"
+          # Shipped as resources by the entries below.
+          - "LICENSE-vo-amrwbenc.txt"
+          - "NOTICE-vo-amrwbenc.txt"
       # Apache-2.0 §4(a) requires the licence and NOTICE to travel with
       # any binary distribution of vo-amrwbenc, so they ship in the bundle.
       - path: Sources/RTP/AMRWB/vendor/LICENSE-vo-amrwbenc.txt

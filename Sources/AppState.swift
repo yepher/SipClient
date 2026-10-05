@@ -31,6 +31,12 @@ final class AppState: ObservableObject {
     @Published var selectedScenarioID: UUID?
     @Published var runningScenarioID: UUID?
     @Published var currentScenarioStep: Int?
+    /// 1-based call number within a repeated scenario run.
+    @Published var currentScenarioIteration: Int?
+    /// The latest scenario run's results — live while it runs, kept after.
+    @Published private(set) var scenarioRun: ScenarioRunReport?
+    /// Where `scenarioRun` is being written (a .txt; a .csv sits beside it).
+    @Published private(set) var scenarioRunReportURL: URL?
     @Published var rtpStats: String = ""
     /// Per-call metrics (created at placeCall, kept around for the
     /// final summary). UI binds to this for the in-call timing/jitter
@@ -65,8 +71,25 @@ final class AppState: ObservableObject {
     /// Sized at 1 s × 48 kHz so any codec rate (8/16/48 kHz) fits.
     let callMicBuffer = FrameBuffer(maxSeconds: 1.0, sampleRate: 48000)
 
+    /// Prompts (clips, synthesized speech) to send, already resampled to
+    /// the call's codec rate. Takes priority over the mic in the RTP send
+    /// loop. Sized generously: a prompt is written in one go.
+    let callPromptBuffer = FrameBuffer(maxSeconds: 120, sampleRate: 48000)
+
     /// The active call's RTP session, exposed so scenarios can send DTMF.
     private var currentRTPSession: RTPSession?
+
+    /// Far-end speech detector for the active call. Scenarios read it to
+    /// decide whether the far end was heard.
+    private var farEndSpeech: SpeechActivityMonitor?
+    /// Status and `X-` headers of the active outbound call's last final
+    /// response to INVITE.
+    private var lastFinalResponse: (status: Int, headers: [String: String])?
+    /// Set while a scenario that ignores the mic is running.
+    private var scenarioIgnoresMic = false
+    /// Synthesized prompts, keyed by text and sample rate, so a 100-call
+    /// run synthesizes each phrase once.
+    private var synthesizedPrompts: [String: [Int16]] = [:]
 
     private var currentCall: SIPCall?
     private var currentTask: Task<Void, Never>?
@@ -189,8 +212,10 @@ final class AppState: ObservableObject {
 
     // MARK: - Outbound call
 
-    func placeCall(config: SIPCallConfig) {
-        guard !callInProgress else { return }
+    /// Returns the new call's SIP Call-ID, or nil if a call is already up.
+    @discardableResult
+    func placeCall(config: SIPCallConfig) -> String? {
+        guard !callInProgress else { return nil }
         callInProgress = true
         callStatus = "Starting…"
         currentSendSilenceWhileMuted = config.sendSilenceWhileMuted
@@ -202,6 +227,8 @@ final class AppState: ObservableObject {
 
         let call = SIPCall(config: config)
         currentCall = call
+        farEndSpeech = nil
+        lastFinalResponse = nil
 
         call.onWireLog = { entry in
             Task { @MainActor in self.appendLog(entry) }
@@ -217,6 +244,15 @@ final class AppState: ObservableObject {
         }
         call.onAnswered = {
             Task { @MainActor in metrics.recordResponse(status: 200) }
+        }
+        call.onFinalResponse = { resp in
+            var xHeaders: [String: String] = [:]
+            for (name, values) in resp.headers where name.hasPrefix("x-") {
+                xHeaders[name] = values.first ?? ""
+            }
+            Task { @MainActor in
+                self.lastFinalResponse = (resp.statusCode, xHeaders)
+            }
         }
         call.onMediaReady = { rtpSession in
             Task { @MainActor in self.attachAudio(to: rtpSession) }
@@ -245,6 +281,7 @@ final class AppState: ObservableObject {
                 }
             }
         }
+        return call.callID
     }
 
     func hangup() {
@@ -447,6 +484,12 @@ final class AppState: ObservableObject {
 
     private func attachAudio(to rtp: RTPSession) {
         rtp.micBuffer = callMicBuffer
+        callPromptBuffer.clear()
+        rtp.promptBuffer = callPromptBuffer
+        rtp.ignoreMic = scenarioIgnoresMic
+        let speech = SpeechActivityMonitor()
+        farEndSpeech = speech
+        let recvRate = rtp.codec.inputSampleRate
         currentRTPSession = rtp
         callConnected = true
         callMetrics?.setPtime(rtp.ptime)
@@ -517,6 +560,7 @@ final class AppState: ObservableObject {
                            + "ptime \(rtp.ptime) ms)"))
                 rtp.onPlaybackPCM = { [weak self, weak jb] samples, seq, ts, arrivedAt in
                     guard let self else { return }
+                    speech.feed(samples, sampleRate: recvRate, at: arrivedAt)
                     self.audioEngine.levelMeter.recordRecv(samples)
                     var peak: Int32 = 0
                     for s in samples {
@@ -533,6 +577,7 @@ final class AppState: ObservableObject {
             } else {
                 rtp.onPlaybackPCM = { [weak self] samples, _, _, arrivedAt in
                     guard let self else { return }
+                    speech.feed(samples, sampleRate: recvRate, at: arrivedAt)
                     self.audioEngine.levelMeter.recordRecv(samples)
                     var peak: Int32 = 0
                     for s in samples {
@@ -722,6 +767,7 @@ final class AppState: ObservableObject {
             }
         }
         callMicBuffer.clear()
+        callPromptBuffer.clear()
         audioEngine.stopCallMode()
         rtpStatsTask?.cancel()
         rtpStatsTask = nil
@@ -971,83 +1017,389 @@ final class AppState: ObservableObject {
         return scenarios.first(where: { $0.id == id })
     }
 
-    /// Run the scenario. If it has a profile, places that call first and
-    /// runs steps after answer; otherwise runs against the active call.
+    /// Run the scenario. If it has a profile, each iteration places that
+    /// call first and runs the steps after; otherwise it runs once against
+    /// the active call. Every iteration is scored pass/fail into
+    /// `scenarioRun`.
     func runScenario(_ scenario: Scenario, authPassword: String = "") {
         guard runningScenarioID == nil else { return }
+        let profile = scenario.profileID.flatMap { profileWithLiveEdits(id: $0) }
+        if scenario.repeatCount > 1 {
+            guard profile != nil else {
+                appendLog(.init(direction: .sent, kind: .error,
+                    summary: "Scenario “\(scenario.name)” repeats, so it needs a profile to dial"))
+                return
+            }
+            guard !callInProgress else {
+                appendLog(.init(direction: .sent, kind: .error,
+                    summary: "Hang up the current call before starting a repeated scenario"))
+                return
+            }
+        }
+
         runningScenarioID = scenario.id
         currentScenarioStep = nil
+        currentScenarioIteration = nil
         appendLog(.init(direction: .sent, kind: .info,
                         summary: "Running scenario: \(scenario.name)"))
 
+        let iterations = profile == nil ? 1 : max(1, scenario.repeatCount)
+        scenarioRun = ScenarioRunReport(scenarioID: scenario.id,
+                                        scenarioName: scenario.name,
+                                        profileName: profile?.name ?? "(active call)",
+                                        startedAt: Date(),
+                                        plannedIterations: iterations)
+        scenarioRunReportURL = newScenarioReportURL(for: scenario)
+        setScenarioIgnoresMic(scenario.ignoreMicrophone)
+
         scenarioTask = Task { [scenario] in
-            defer {
-                Task { @MainActor in
-                    self.runningScenarioID = nil
-                    self.currentScenarioStep = nil
-                    self.appendLog(.init(direction: .sent, kind: .info,
-                                         summary: "Scenario finished: \(scenario.name)"))
+            for i in 1...iterations {
+                if Task.isCancelled { break }
+                self.currentScenarioIteration = i
+                await self.runScenarioIteration(scenario, iteration: i,
+                                                profile: profile,
+                                                authPassword: authPassword,
+                                                isLooping: iterations > 1)
+                if i < iterations && !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds:
+                        UInt64(max(0, scenario.pauseBetweenRuns) * 1_000_000_000))
                 }
             }
-
-            // Place call from profile if specified.
-            if let profileID = scenario.profileID,
-               let profile = self.profileWithLiveEdits(id: profileID),
-               !self.callInProgress {
-                let cfg = profile.callConfig(authPassword: authPassword)
-                self.placeCall(config: cfg)
-            }
-
-            for (idx, step) in scenario.steps.enumerated() {
-                if Task.isCancelled { return }
-                self.currentScenarioStep = idx
-                await self.executeStep(step)
-            }
+            self.finishScenarioRun(cancelled: Task.isCancelled)
         }
     }
 
     func cancelScenario() {
         scenarioTask?.cancel()
         scenarioTask = nil
-        runningScenarioID = nil
-        currentScenarioStep = nil
+        // A repeated run owns its calls, so don't leave one dangling.
+        if let run = scenarioRun, run.plannedIterations > 1, run.endedAt == nil,
+           callInProgress {
+            hangup()
+            stopCallRecording()
+        }
+        finishScenarioRun(cancelled: true)
     }
 
-    private func executeStep(_ step: ScenarioStep) async {
+    private func finishScenarioRun(cancelled: Bool) {
+        guard runningScenarioID != nil else { return }
+        runningScenarioID = nil
+        currentScenarioStep = nil
+        currentScenarioIteration = nil
+        setScenarioIgnoresMic(false)
+        if var run = scenarioRun {
+            run.endedAt = Date()
+            run.cancelled = cancelled
+            scenarioRun = run
+            writeScenarioReport()
+            appendLog(.init(direction: .sent,
+                            kind: run.failed > 0 ? .error : .info,
+                            summary: "Scenario finished — \(run.summaryLine)"
+                                   + (cancelled ? " (cancelled)" : ""),
+                            detail: run.textReport))
+        }
+    }
+
+    private func setScenarioIgnoresMic(_ ignore: Bool) {
+        scenarioIgnoresMic = ignore
+        currentRTPSession?.ignoreMic = ignore
+    }
+
+    /// Per-iteration state the steps read and fill in.
+    private struct ScenarioIterationContext {
+        let scenario: Scenario
+        let placedCall: Bool
+        /// Far-end speech has been heard at least once on this call.
+        var heardFarEnd = false
+        /// When our most recent prompt finished sending.
+        var promptEndedAt: Date?
+        var firstSpeechMs: Int?
+        var responseLatencyMs: Int?
+    }
+
+    private func runScenarioIteration(_ scenario: Scenario, iteration: Int,
+                                      profile: DialerProfile?, authPassword: String,
+                                      isLooping: Bool) async {
+        let startedAt = Date()
+        var callID = currentCall?.callID ?? currentInboundCall?.callID ?? "(none)"
+        var ctx = ScenarioIterationContext(scenario: scenario, placedCall: profile != nil)
+        var failure: (step: Int, reason: String)?
+
+        if let profile {
+            if isLooping && scenario.recordingPolicy != .off && !callRecordingArmed {
+                toggleCallRecording()
+            }
+            if let id = placeCall(config: profile.callConfig(authPassword: authPassword)) {
+                callID = id
+            } else {
+                failure = (0, "Could not place call: previous call still in progress")
+            }
+        }
+
+        if failure == nil {
+            for (idx, step) in scenario.steps.enumerated() {
+                if Task.isCancelled { break }
+                currentScenarioStep = idx
+                if let reason = await executeStep(step, context: &ctx) {
+                    failure = (idx, reason)
+                    break
+                }
+            }
+        }
+        // A cancelled iteration is neither a pass nor a fail; it just stops.
+        if Task.isCancelled { return }
+
+        let metrics = callMetrics
+        let answerMs: Int? = {
+            guard let a = metrics?.answeredAt, let i = metrics?.inviteAt else { return nil }
+            return Int(a.timeIntervalSince(i) * 1000)
+        }()
+        let packets = farEndSpeech?.packetsThisCall ?? 0
+        let final = lastFinalResponse
+
+        var recordingPath: String?
+        if isLooping {
+            if callInProgress { hangup() }
+            await waitForCallToEnd(timeout: 10)
+            // Disarms if the call never connected; finalises otherwise.
+            stopCallRecording()
+            if scenario.recordingPolicy != .off,
+               let rec = lastFinishedRecording, rec.startedAt >= startedAt {
+                if failure == nil && scenario.recordingPolicy == .failuresOnly {
+                    try? FileManager.default.removeItem(at: rec.url)
+                } else {
+                    recordingPath = rec.url.path
+                }
+            }
+        }
+
+        let result = ScenarioIterationResult(
+            iteration: iteration,
+            startedAt: startedAt,
+            callID: callID,
+            passed: failure == nil,
+            failedStep: failure?.step,
+            failedStepLabel: failure.map { scenario.steps.indices.contains($0.step)
+                ? scenario.steps[$0.step].typeLabel : "Place call" },
+            reason: failure?.reason,
+            sipStatus: final?.status,
+            correlationHeaders: final?.headers ?? [:],
+            answerMs: answerMs,
+            firstSpeechMs: ctx.firstSpeechMs,
+            responseLatencyMs: ctx.responseLatencyMs,
+            rtpPacketsReceived: packets,
+            recordingPath: recordingPath)
+        scenarioRun?.results.append(result)
+        writeScenarioReport()
+
+        if let failure {
+            appendLog(.init(direction: .sent, kind: .error,
+                summary: "Scenario call #\(iteration) FAILED at step \(failure.step + 1): "
+                       + failure.reason,
+                detail: "Call-ID: \(callID)"))
+        } else {
+            appendLog(.init(direction: .sent, kind: .info,
+                summary: "Scenario call #\(iteration) passed (Call-ID \(callID))"))
+        }
+    }
+
+    /// Wait for the call and its media to be fully torn down, so the next
+    /// iteration can dial. Gives up early if the run is cancelled.
+    private func waitForCallToEnd(timeout: TimeInterval) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while (callInProgress || currentRTPSession != nil) && Date() < deadline {
+            if Task.isCancelled { return }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+        }
+    }
+
+    /// Run one step. Returns nil on success, or why it failed.
+    private func executeStep(_ step: ScenarioStep,
+                             context ctx: inout ScenarioIterationContext) async -> String? {
         switch step {
         case .waitForAnswer(let timeout):
             let deadline = Date().addingTimeInterval(timeout)
             while Date() < deadline {
-                if Task.isCancelled { return }
-                if callConnected { return }
+                if Task.isCancelled { return nil }
+                if callConnected { return nil }
+                if ctx.placedCall && !callInProgress {
+                    return "Call failed before answer — \(callStatus)"
+                }
                 try? await Task.sleep(nanoseconds: 100_000_000)
             }
             appendLog(.init(direction: .sent, kind: .error,
                             summary: "waitForAnswer timed out after \(Int(timeout))s"))
+            return "No answer within \(Int(timeout)) s — \(callStatus)"
         case .wait(let seconds):
             try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            return nil
         case .playClip(let clipID):
-            if let clip = audioClips.first(where: { $0.id == clipID }) {
-                playClipIntoCall(clip)
-                // Wait for the clip to finish so subsequent steps run after it.
-                let nanos = UInt64(clip.durationSeconds * 1_000_000_000)
-                try? await Task.sleep(nanoseconds: nanos)
-            } else {
+            guard let clip = audioClips.first(where: { $0.id == clipID }) else {
                 appendLog(.init(direction: .sent, kind: .error,
                                 summary: "Clip not found in scenario"))
+                return "Clip not found in the audio library"
             }
+            guard let samples = clipSamplesForCurrentCall(clip) else {
+                return "No active call to play “\(clip.name)” into"
+            }
+            if let err = await playPrompt(samples) { return err }
+            ctx.promptEndedAt = Date()
+            return nil
+        case .speak(let text):
+            guard let rtp = currentRTPSession else { return "No active call to speak into" }
+            let rate = rtp.codec.inputSampleRate
+            let key = "\(Int(rate))|\(text)"
+            var samples = synthesizedPrompts[key]
+            if samples == nil {
+                samples = await PromptAudio.synthesize(text, sampleRate: rate)
+                synthesizedPrompts[key] = samples
+            }
+            guard let samples, !samples.isEmpty else {
+                return "Speech synthesis failed for “\(text)”"
+            }
+            if let err = await playPrompt(samples) { return err }
+            appendLog(.init(direction: .sent, kind: .info, summary: "Spoke: “\(text)”"))
+            ctx.promptEndedAt = Date()
+            return nil
+        case .waitForSpeech(let timeout):
+            return await waitForFarEndSpeech(timeout: timeout, context: &ctx)
         case .sendDTMF(let digits):
             guard let rtp = currentRTPSession else {
                 appendLog(.init(direction: .sent, kind: .error,
                                 summary: "Cannot send DTMF: no active call"))
-                return
+                return "No active call to send DTMF on"
             }
             await rtp.sendDTMFDigits(digits)
             appendLog(.init(direction: .sent, kind: .info,
                             summary: "DTMF: \(digits)"))
+            return nil
         case .hangup:
             hangup()
+            return nil
         }
+    }
+
+    /// Send a prompt and wait until its last frame has gone out.
+    private func playPrompt(_ samples: [Int16]) async -> String? {
+        guard let rtp = currentRTPSession else { return "No active call" }
+        callPromptBuffer.write(samples)
+        let seconds = Double(samples.count) / rtp.codec.inputSampleRate
+        let deadline = Date().addingTimeInterval(seconds + 5)
+        while callPromptBuffer.availableSamples > 0 {
+            if Task.isCancelled { return nil }
+            if currentRTPSession !== rtp { return "Call ended while our prompt was playing" }
+            if Date() > deadline { return "Prompt did not finish sending (RTP send stalled?)" }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+        // The final frame has been taken, not necessarily sent; give it one ptime.
+        try? await Task.sleep(nanoseconds: UInt64(rtp.ptime) * 1_000_000)
+        return nil
+    }
+
+    /// Speech must last this long in total before it counts, so a click
+    /// or a burst of noise doesn't pass for the far end talking.
+    private static let minSpeechMs: Double = 300
+    /// Longest we'll wait for the far end to stop talking once it starts.
+    private static let maxTurnSeconds: TimeInterval = 30
+
+    private func waitForFarEndSpeech(timeout: TimeInterval,
+                                     context ctx: inout ScenarioIterationContext) async -> String? {
+        guard currentRTPSession != nil, let monitor = farEndSpeech else {
+            return "No active call to listen on"
+        }
+        let threshold = ctx.scenario.speechThresholdDbfs
+        monitor.mark(thresholdDbfs: threshold)
+        let start = Date()
+
+        // 1. Onset.
+        while monitor.snapshot().speechMs < Self.minSpeechMs {
+            if Task.isCancelled { return nil }
+            if !callInProgress { return "Call ended while waiting for far-end speech" }
+            if Date().timeIntervalSince(start) >= timeout {
+                return diagnoseNoSpeech(monitor, timeout: timeout,
+                                        threshold: threshold, context: ctx)
+            }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        if let first = monitor.snapshot().firstSpeechAt {
+            if !ctx.heardFarEnd, let answered = callMetrics?.answeredAt {
+                ctx.firstSpeechMs = Int(first.timeIntervalSince(answered) * 1000)
+            }
+            if let prompt = ctx.promptEndedAt {
+                ctx.responseLatencyMs = Int(first.timeIntervalSince(prompt) * 1000)
+            }
+        }
+        ctx.heardFarEnd = true
+
+        // 2. Let them finish, so a following prompt doesn't talk over them.
+        let turnDeadline = Date().addingTimeInterval(Self.maxTurnSeconds)
+        while Date() < turnDeadline {
+            if Task.isCancelled || !callInProgress { break }
+            if let last = monitor.snapshot().lastSpeechAt,
+               Date().timeIntervalSince(last) >= ctx.scenario.endOfTurnSilence {
+                break
+            }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        return nil
+    }
+
+    /// Explain a silent wait in terms of which media direction looks broken.
+    private func diagnoseNoSpeech(_ monitor: SpeechActivityMonitor, timeout: TimeInterval,
+                                  threshold: Double,
+                                  context ctx: ScenarioIterationContext) -> String {
+        let s = monitor.snapshot()
+        let secs = Int(timeout)
+        let peak = s.peakDbfs.isFinite ? String(format: "%.0f dBFS", s.peakDbfs) : "digital silence"
+        if monitor.packetsThisCall == 0 {
+            return "No RTP received from the far end at all (inbound media never arrived)"
+        }
+        if s.packets == 0 {
+            return "Inbound RTP stopped — none in the last \(secs) s "
+                 + "(\(monitor.packetsThisCall) packets earlier in the call)"
+        }
+        if ctx.heardFarEnd && ctx.promptEndedAt != nil {
+            return "Far end was heard earlier but didn't reply to our prompt within \(secs) s "
+                 + "(inbound RTP flowing, peak \(peak)) — our audio may not be reaching it"
+        }
+        return "Inbound RTP flowing (\(s.packets) packets) but no speech in \(secs) s: "
+             + "peak \(peak), threshold \(Int(threshold)) dBFS"
+             + (s.speechMs > 0 ? ", only \(Int(s.speechMs)) ms above it" : "")
+    }
+
+    // MARK: Scenario reports
+
+    private var scenarioRunsDirectory: URL {
+        let dir = appSupportDir.appendingPathComponent("ScenarioRuns", isDirectory: true)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    private func newScenarioReportURL(for scenario: Scenario) -> URL {
+        let stamp = Self.recordingStampFormatter.string(from: Date())
+        let safe = scenario.name.components(separatedBy: CharacterSet(charactersIn: "/:\\"))
+            .joined(separator: "_")
+        return scenarioRunsDirectory.appendingPathComponent("\(stamp) \(safe).txt")
+    }
+
+    /// Rewritten after every call, so a crash or quit mid-run still
+    /// leaves everything up to that point on disk.
+    private func writeScenarioReport() {
+        guard let run = scenarioRun, let url = scenarioRunReportURL else { return }
+        try? run.textReport.write(to: url, atomically: true, encoding: .utf8)
+        try? run.csv.write(to: url.deletingPathExtension().appendingPathExtension("csv"),
+                           atomically: true, encoding: .utf8)
+    }
+
+    func copyScenarioReport() {
+        guard let run = scenarioRun else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(run.textReport, forType: .string)
+    }
+
+    func revealScenarioReport() {
+        guard let url = scenarioRunReportURL else { return }
+        revealInFinder(url)
     }
 
     // MARK: - Audio Library
@@ -1139,10 +1491,29 @@ final class AppState: ObservableObject {
     /// a clean send, you'd want a dedicated source-switch; this is fine
     /// for the simple case where the user pauses talking before pressing.
     func playClipIntoCall(_ clip: AudioClip) {
-        guard callInProgress, let loaded = try? WAVFile.read(url: clip.fileURL) else { return }
-        callMicBuffer.write(loaded.samples)
+        guard let samples = clipSamplesForCurrentCall(clip) else { return }
+        callPromptBuffer.write(samples)
         appendLog(.init(direction: .sent, kind: .info,
-                        summary: "Queued clip “\(clip.name)” into call (\(loaded.samples.count) samples)"))
+                        summary: "Queued clip “\(clip.name)” into call (\(samples.count) samples)"))
+    }
+
+    /// Load a clip resampled to the active call's codec rate. Library
+    /// clips are 8 kHz; written in raw they'd play fast on any wideband
+    /// codec.
+    private func clipSamplesForCurrentCall(_ clip: AudioClip) -> [Int16]? {
+        guard let rtp = currentRTPSession else {
+            appendLog(.init(direction: .sent, kind: .error,
+                            summary: "Cannot play clip: no active call"))
+            return nil
+        }
+        guard let loaded = try? WAVFile.read(url: clip.fileURL) else {
+            appendLog(.init(direction: .sent, kind: .error,
+                            summary: "Cannot read clip “\(clip.name)”"))
+            return nil
+        }
+        return PromptAudio.resample(loaded.samples,
+                                    from: Double(loaded.sampleRate),
+                                    to: rtp.codec.inputSampleRate)
     }
 
     // MARK: - Recording

@@ -346,7 +346,8 @@ struct CallChartsView: View {
             .chartPlotStyle { $0.clipped() }
             .chartBackground { proxy in
                 GeometryReader { geo in
-                    let frame = geo[proxy.plotAreaFrame]
+                    // nil only before the chart's first layout pass.
+                    let frame = proxy.plotFrame.map { geo[$0] } ?? .zero
                     Canvas { ctx, _ in
                         switch laneMode {
                         case .waveform:
@@ -608,7 +609,8 @@ struct CallChartsView: View {
     @ViewBuilder
     private func interactionLayer(proxy: ChartProxy) -> some View {
         GeometryReader { geo in
-            let plotFrame = geo[proxy.plotAreaFrame]
+            let plotFrame = proxy.plotFrame.map { geo[$0] }
+                ?? CGRect(origin: .zero, size: geo.size)
             Rectangle()
                 .fill(Color.clear)
                 .contentShape(Rectangle())

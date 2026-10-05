@@ -34,6 +34,19 @@ final class FrameBuffer: @unchecked Sendable {
         return out
     }
 
+    /// Like `readFrame`, but hands back a partial final frame padded with
+    /// silence instead of holding it back. Returns `nil` only when empty.
+    /// For finite sources (prompts) whose tail would otherwise never send.
+    func readFramePadded(size: Int) -> [Int16]? {
+        lock.lock(); defer { lock.unlock() }
+        guard !samples.isEmpty else { return nil }
+        let n = min(size, samples.count)
+        var out = Array(samples.prefix(n))
+        samples.removeFirst(n)
+        if n < size { out.append(contentsOf: [Int16](repeating: 0, count: size - n)) }
+        return out
+    }
+
     func clear() {
         lock.lock(); defer { lock.unlock() }
         samples.removeAll(keepingCapacity: true)

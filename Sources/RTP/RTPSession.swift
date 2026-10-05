@@ -38,6 +38,21 @@ final class RTPSession: @unchecked Sendable {
     /// Producer for outgoing audio. Empty → silence is sent.
     var micBuffer: FrameBuffer?
 
+    /// Prompt audio (clips, synthesized speech) already at the codec's
+    /// input rate. While it holds samples it *replaces* the mic rather
+    /// than sharing `micBuffer` with it — sharing interleaved the two
+    /// streams' chunks and garbled both.
+    var promptBuffer: FrameBuffer?
+
+    /// Send silence instead of microphone audio (prompts still play).
+    /// Automated test runs set this so room noise can't reach the far
+    /// end and get mistaken for a caller turn.
+    var ignoreMic: Bool {
+        get { suppressLock.lock(); defer { suppressLock.unlock() }; return _ignoreMic }
+        set { suppressLock.lock(); _ignoreMic = newValue; suppressLock.unlock() }
+    }
+    private var _ignoreMic = false
+
     /// Called from the receive task with decoded Int16 mono PCM at the
     /// codec's native sample rate (8 kHz for G.711, 16 kHz for G.722
     /// and AMR-WB).
@@ -158,7 +173,12 @@ final class RTPSession: @unchecked Sendable {
                     try? await Task.sleep(nanoseconds: interval)
                     continue
                 }
-                let pcm = self.micBuffer?.readFrame(size: frameSize) ?? silentPCM
+                // Always drain the mic so it can't build up a backlog
+                // that would play out, stale, once a prompt finishes.
+                let mic = self.micBuffer?.readFrame(size: frameSize)
+                let pcm = self.promptBuffer?.readFramePadded(size: frameSize)
+                    ?? (self.ignoreMic ? nil : mic)
+                    ?? silentPCM
                 self.onSentPCM?(pcm)
                 let frame = self.encoder.encode(pcm: pcm)
                 do {

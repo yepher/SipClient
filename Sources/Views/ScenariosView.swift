@@ -29,16 +29,20 @@ struct ScenariosView: View {
             HStack {
                 Text("Scenarios").font(.headline)
                 Spacer()
-                Button {
-                    let new = Scenario(name: "New Scenario", steps: [
-                        .waitForAnswer(timeout: 30)
-                    ])
-                    appState.upsertScenario(new)
-                    appState.selectScenario(new.id)
+                Menu {
+                    Button("Blank scenario") {
+                        add(Scenario(name: "New Scenario", steps: [
+                            .waitForAnswer(timeout: 30)
+                        ]))
+                    }
+                    Button("Agent round-trip test (one-way audio, ×100)") {
+                        add(.agentRoundTripTemplate(profileID: appState.selectedProfileID))
+                    }
                 } label: {
                     Image(systemName: "plus")
                 }
-                .buttonStyle(.bordered)
+                .menuStyle(.borderlessButton)
+                .fixedSize()
             }
             .padding(8)
             Divider()
@@ -63,10 +67,7 @@ struct ScenariosView: View {
                             renamingScenario = scenario
                         }
                         Button("Duplicate") {
-                            var copy = scenario
-                            copy = Scenario(id: UUID(), name: scenario.name + " copy",
-                                            profileID: scenario.profileID, steps: scenario.steps)
-                            appState.upsertScenario(copy)
+                            appState.upsertScenario(scenario.duplicate(named: scenario.name + " copy"))
                         }
                         Button("Delete", role: .destructive) {
                             appState.deleteScenario(id: scenario.id)
@@ -89,6 +90,8 @@ struct ScenariosView: View {
                 clips: appState.audioClips,
                 isRunning: appState.runningScenarioID == draft.id,
                 currentStep: appState.runningScenarioID == draft.id ? appState.currentScenarioStep : nil,
+                currentIteration: appState.runningScenarioID == draft.id
+                    ? appState.currentScenarioIteration : nil,
                 hasUnsavedChanges: hasUnsavedChanges,
                 onSave: {
                     if let d = self.draft {
@@ -136,6 +139,11 @@ struct ScenariosView: View {
         .frame(width: 360)
     }
 
+    private func add(_ scenario: Scenario) {
+        appState.upsertScenario(scenario)
+        appState.selectScenario(scenario.id)
+    }
+
     private func syncDraft() {
         if let s = appState.scenario(id: appState.selectedScenarioID) {
             draft = s
@@ -153,6 +161,7 @@ private struct ScenarioEditor: View {
     let clips: [AudioClip]
     let isRunning: Bool
     let currentStep: Int?
+    let currentIteration: Int?
     let hasUnsavedChanges: Bool
     let onSave: () -> Void
     let onRun: () -> Void
@@ -162,7 +171,10 @@ private struct ScenarioEditor: View {
         VStack(alignment: .leading, spacing: 0) {
             header
             Divider()
+            runSettings
+            Divider()
             stepsList
+            ScenarioRunPanel(scenarioID: scenario.id)
             Divider()
             footer
         }
@@ -234,6 +246,8 @@ private struct ScenarioEditor: View {
                     scenario.steps.append(.playClip(clipID: first.id))
                 }
             }
+            Button("Wait for far-end speech") { scenario.steps.append(.waitForSpeech(timeout: 15)) }
+            Button("Speak text") { scenario.steps.append(.speak(text: "What is the capital of Illinois?")) }
             Button("Send DTMF")        { scenario.steps.append(.sendDTMF(digits: "1")) }
             Button("Hang up")          { scenario.steps.append(.hangup) }
         } label: {
@@ -256,15 +270,66 @@ private struct ScenarioEditor: View {
                     Label("Run Scenario", systemImage: "play.fill")
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(scenario.steps.isEmpty)
+                .disabled(scenario.steps.isEmpty
+                          || (scenario.repeatCount > 1 && scenario.profileID == nil))
             }
             Spacer()
             if let i = currentStep, isRunning {
-                Text("Step \(i + 1) of \(scenario.steps.count)")
+                Text((currentIteration.map { "Call \($0) of \(scenario.repeatCount) · " } ?? "")
+                     + "Step \(i + 1) of \(scenario.steps.count)")
                     .foregroundStyle(.secondary)
                     .monospaced()
             }
         }
+        .padding(12)
+    }
+
+    @ViewBuilder
+    private var runSettings: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Text("Repeat").foregroundStyle(.secondary)
+                TextField("", value: Binding(
+                    get: { scenario.repeatCount },
+                    set: { scenario.repeatCount = max(1, min(10_000, $0)) }
+                ), format: .number)
+                .frame(width: 60)
+                Text("times").foregroundStyle(.secondary)
+                if scenario.repeatCount > 1 {
+                    Text("· pause").foregroundStyle(.secondary)
+                    TextField("", value: $scenario.pauseBetweenRuns, format: .number)
+                        .frame(width: 44)
+                    Text("s between calls").foregroundStyle(.secondary)
+                    Picker("", selection: $scenario.recordingPolicy) {
+                        ForEach(ScenarioRecordingPolicy.allCases) { p in
+                            Text(p.displayName).tag(p)
+                        }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
+            }
+            if scenario.repeatCount > 1 && scenario.profileID == nil {
+                Label("Pick a profile — each repetition dials a new call.",
+                      systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+            HStack(spacing: 6) {
+                Text("Speech above").foregroundStyle(.secondary)
+                TextField("", value: $scenario.speechThresholdDbfs, format: .number)
+                    .frame(width: 44)
+                Text("dBFS · turn ends after").foregroundStyle(.secondary)
+                TextField("", value: $scenario.endOfTurnSilence, format: .number)
+                    .frame(width: 44)
+                Text("s of silence").foregroundStyle(.secondary)
+                Spacer()
+                Toggle("Send silence instead of mic", isOn: $scenario.ignoreMicrophone)
+                    .help("Keeps room noise from reaching the far end while the "
+                          + "scenario runs. Prompts still play.")
+            }
+        }
+        .font(.callout)
         .padding(12)
     }
 
@@ -365,6 +430,113 @@ private struct StepRow: View {
             }
         case .hangup:
             Text("Hang up")
+        case .waitForSpeech(let timeout):
+            HStack(spacing: 6) {
+                Text("Wait for far-end speech, timeout").foregroundStyle(.secondary)
+                TextField("", value: Binding(
+                    get: { timeout },
+                    set: { step = .waitForSpeech(timeout: $0) }
+                ), format: .number)
+                .frame(width: 60)
+                Text("s, then let them finish").foregroundStyle(.secondary)
+            }
+            .help("Fails if the far end isn't heard in time. Once it is, waits for "
+                  + "the scenario's end-of-turn silence before the next step.")
+        case .speak(let text):
+            HStack(spacing: 6) {
+                Text("Speak").foregroundStyle(.secondary)
+                TextField("text", text: Binding(
+                    get: { text },
+                    set: { step = .speak(text: $0) }
+                ))
+                .textFieldStyle(.roundedBorder)
+            }
+            .help("Spoken into the call with the system voice. Nothing plays locally.")
+        }
+    }
+}
+
+/// Live and final results of the scenario's latest run: pass/fail
+/// counts, success rate, and the failed calls to go and look at.
+private struct ScenarioRunPanel: View {
+    @EnvironmentObject var appState: AppState
+    let scenarioID: UUID
+
+    var body: some View {
+        if let run = appState.scenarioRun, run.scenarioID == scenarioID {
+            Divider()
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Text("Last run").font(.headline)
+                    ProgressView(value: Double(run.results.count),
+                                 total: Double(max(1, run.plannedIterations)))
+                        .frame(maxWidth: 160)
+                    Text("\(run.results.count)/\(run.plannedIterations)")
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                    Label("\(run.passed)", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Label("\(run.failed)", systemImage: "xmark.circle.fill")
+                        .foregroundStyle(run.failed > 0 ? .red : .secondary)
+                    if !run.results.isEmpty {
+                        Text(String(format: "%.1f%% success", run.successRate * 100))
+                            .bold()
+                    }
+                    if run.cancelled {
+                        Text("cancelled").foregroundStyle(.orange)
+                    }
+                    Spacer()
+                    Button("Copy Report") { appState.copyScenarioReport() }
+                    Button("Show Files") { appState.revealScenarioReport() }
+                        .disabled(appState.scenarioRunReportURL == nil)
+                }
+                .labelStyle(.titleAndIcon)
+                if !run.failures.isEmpty {
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(run.failures) { f in
+                                failureRow(f)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .frame(maxHeight: 180)
+                }
+            }
+            .font(.callout)
+            .padding(12)
+        }
+    }
+
+    private func failureRow(_ f: ScenarioIterationResult) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 8) {
+                Text("#\(f.iteration)").monospacedDigit().bold()
+                Text(f.startedAt, format: .dateTime.hour().minute().second())
+                    .foregroundStyle(.secondary)
+                Text(f.callID)
+                    .font(.callout.monospaced())
+                    .textSelection(.enabled)
+                if let path = f.recordingPath {
+                    Button {
+                        appState.revealInFinder(URL(fileURLWithPath: path))
+                    } label: {
+                        Image(systemName: "waveform")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Show this call's recording (left = us, right = far end)")
+                }
+            }
+            Text("Step \((f.failedStep ?? 0) + 1) (\(f.failedStepLabel ?? "?")): \(f.reason ?? "")")
+                .foregroundStyle(.secondary)
+                .textSelection(.enabled)
+            if !f.correlationHeaders.isEmpty {
+                Text(f.correlationHeaders.sorted { $0.key < $1.key }
+                        .map { "\($0.key): \($0.value)" }.joined(separator: "  "))
+                    .font(.caption.monospaced())
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
         }
     }
 }

@@ -36,6 +36,9 @@ final class SIPCall: @unchecked Sendable {
     var onProvisional: (@Sendable (Int) -> Void)?
     /// Fires when the 200 OK to the INVITE arrives (call answered).
     var onAnswered: (@Sendable () -> Void)?
+    /// Fires for every final (>= 200) response to the INVITE, so callers
+    /// can see why a call failed and pick up server correlation headers.
+    var onFinalResponse: (@Sendable (SIPResponse) -> Void)?
 
     /// Fires once the call is answered and the RTP session is created.
     /// AppState uses this to wire mic capture and speaker playback.
@@ -208,6 +211,8 @@ final class SIPCall: @unchecked Sendable {
                 provisionalReceived = true
                 emitStatus("\(status) \(resp.statusText)")
                 onProvisional?(status)
+            } else if status >= 200 {
+                onFinalResponse?(resp)
             }
             if toTag.isEmpty,
                let to = resp.firstHeader("to"),
